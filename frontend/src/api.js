@@ -24,3 +24,7 @@ export const trips = {
   get: (tripId) => request(`/trips/${tripId}`),
   delete: (tripId) => request(`/trips/${tripId}`, { method: "DELETE" }),
 };
+
+export const photos = {
+  search: (query) => request(`/photos?query=${encodeURIComponent(query)}`),
+};
