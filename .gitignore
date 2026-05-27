@@ -3,7 +3,7 @@ dist/
 build/
 .env
 backend/venv/
-backend/*.db
+*.db
 *.pyc
 __pycache__/
 .DS_Store
