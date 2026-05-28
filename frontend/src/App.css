@@ -851,7 +851,163 @@ body {
   color: var(--primary);
 }
 
+/* ============ CONFIRM MODAL ============ */
+
+.confirm-modal {
+  background: var(--surface);
+  border-radius: var(--radius-xl);
+  max-width: 400px;
+  width: 100%;
+  padding: 32px;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp 0.3s ease;
+  text-align: center;
+}
+
+.confirm-modal-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 auto 16px;
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.confirm-modal .btn-danger + .confirm-modal-icon {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+.confirm-modal-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.confirm-modal-message {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+.confirm-modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.confirm-modal-actions .btn {
+  min-width: 100px;
+}
+
+/* ============ TOAST ============ */
+
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  animation: slideInRight 0.3s ease;
+  max-width: 380px;
+  border: 1px solid;
+}
+
+.toast-icon {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.toast-success { background: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
+.toast-success .toast-icon { background: var(--accent); }
+
+.toast-error { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+.toast-error .toast-icon { background: var(--danger); }
+
+.toast-info { background: #eff6ff; border-color: #bfdbfe; color: #1e40af; }
+.toast-info .toast-icon { background: var(--secondary); }
+
+.toast-warning { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+.toast-warning .toast-icon { background: var(--warning); }
+
+/* ============ SKELETON ============ */
+
+.skeleton {
+  background: linear-gradient(90deg, var(--border) 25%, #f1f5f9 50%, var(--border) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+
+.skeleton-card {
+  height: 140px;
+  border-radius: var(--radius-lg);
+}
+
+.skeleton-text { height: 16px; margin-bottom: 8px; width: 60%; }
+.skeleton-text-sm { height: 12px; width: 40%; }
+.skeleton-text-lg { height: 24px; width: 70%; margin-bottom: 12px; }
+.skeleton-badge { height: 24px; width: 80px; border-radius: 20px; display: inline-block; }
+.skeleton-avatar { width: 40px; height: 40px; border-radius: 50%; }
+
+.skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.skeleton-day {
+  height: 200px;
+  border-radius: var(--radius);
+}
+
+/* ============ PAGE TRANSITIONS ============ */
+
+.page-enter {
+  animation: fadeIn 0.25s ease, slideUp 0.3s ease;
+}
+
 /* ============ ANIMATIONS ============ */
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
 
 @keyframes fadeIn {
   from { opacity: 0; }

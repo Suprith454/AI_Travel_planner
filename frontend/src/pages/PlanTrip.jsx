@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../AuthContext";
 import { trips } from "../api";
+import { useToast } from "../components/Toast";
 
 function PlanTrip() {
   const [form, setForm] = useState({
@@ -9,12 +10,14 @@ function PlanTrip() {
     start_date: "",
     end_date: "",
     budget: "",
+    travelers: "",
     interests: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { addToast } = useToast();
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -26,9 +29,11 @@ function PlanTrip() {
     setError("");
     try {
       const trip = await trips.generate(form, user.id);
+      addToast("Trip generated successfully!", "success");
       navigate(`/trips/${trip.id}`);
     } catch (err) {
       setError(err.message);
+      addToast(err.message || "Failed to generate trip", "error");
     } finally {
       setLoading(false);
     }

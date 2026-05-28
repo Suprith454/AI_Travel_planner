@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { trips, photos } from "../api";
+import { useToast } from "../components/Toast";
 
 function TripView() {
   const { id } = useParams();
@@ -18,7 +19,7 @@ function TripView() {
   const userMarkerRef = useRef(null);
   const routeLayerRef = useRef(null);
   const watchIdRef = useRef(null);
-  const destMarkerRef = useRef(null);
+  const { addToast } = useToast();
 
   useEffect(() => {
     loadTrip();
@@ -70,7 +71,7 @@ function TripView() {
       attribution: "&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors",
     }).addTo(map);
 
-    destMarkerRef.current = L.marker([mapModal.lat, mapModal.lng])
+    L.marker([mapModal.lat, mapModal.lng])
       .addTo(map)
       .bindPopup(`<b>${mapModal.name}</b>`)
       .openPopup();
@@ -103,11 +104,14 @@ function TripView() {
         },
         (err) => {
           if (err.code === 1) {
+            addToast("Location access denied. Showing destination only.", "warning");
             map.setView([mapModal.lat, mapModal.lng], 14);
           }
         },
         { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 },
       );
+    } else {
+      addToast("Geolocation not supported on this device.", "warning");
     }
 
     return () => {
@@ -121,16 +125,15 @@ function TripView() {
       }
       userMarkerRef.current = null;
       routeLayerRef.current = null;
-      destMarkerRef.current = null;
     };
-  }, [mapModal, fetchRoute]);
+  }, [mapModal, fetchRoute, addToast]);
 
   const loadTrip = async () => {
     try {
       const data = await trips.get(id);
       setTrip(data);
     } catch (err) {
-      console.error(err);
+      addToast("Failed to load trip", "error");
       navigate("/");
     } finally {
       setLoading(false);
@@ -145,14 +148,11 @@ function TripView() {
       const data = await photos.search(place);
       setPhotoResults(data.results || []);
     } catch {
+      addToast("Failed to load photos", "error");
       setPhotoResults([]);
     } finally {
       setPhotoLoading(false);
     }
-  };
-
-  const openMap = (act) => {
-    setMapModal(act);
   };
 
   const getCategoryClass = (cat) => {
@@ -169,9 +169,16 @@ function TripView() {
 
   if (loading) {
     return (
-      <div className="loading-page">
-        <div className="spinner" />
-        <p className="loading-text">Loading your trip...</p>
+      <div className="main-content">
+        <div className="skeleton skeleton-text" style={{ width: 100, marginBottom: 24 }} />
+        <div className="skeleton skeleton-text-lg" />
+        <div className="flex flex-wrap gap-2 mb-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="skeleton skeleton-badge" />
+          ))}
+        </div>
+        <div className="skeleton skeleton-day" />
+        <div className="skeleton skeleton-day" />
       </div>
     );
   }
@@ -236,7 +243,7 @@ function TripView() {
                           {act.lat != null && act.lng != null && (
                             <button
                               className="btn btn-outline btn-sm"
-                              onClick={() => openMap(act)}
+                              onClick={() => setMapModal(act)}
                             >
                               &#128506; Map
                             </button>
@@ -271,7 +278,7 @@ function TripView() {
                 <p>Loading photos...</p>
               </div>
             ) : photoResults.length === 0 ? (
-              <p className="photo-empty">No photos found. Add an Unsplash API key to get real photos.</p>
+              <p className="photo-empty">No photos found.</p>
             ) : (
               <div className="photo-grid">
                 {photoResults.map((photo, i) => (
