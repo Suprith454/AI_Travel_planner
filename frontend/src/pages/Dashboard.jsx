@@ -4,6 +4,7 @@ import { useAuth } from "../AuthContext";
 import { trips } from "../api";
 import { useToast } from "../components/Toast";
 import ConfirmModal from "../components/ConfirmModal";
+import BackgroundSlideshow from "../components/BackgroundSlideshow";
 
 function Dashboard() {
   const [tripList, setTripList] = useState([]);
@@ -47,25 +48,28 @@ function Dashboard() {
 
   if (loading) {
     return (
-      <div className="main-content">
-        <div className="page-header">
-          <div>
-            <div className="skeleton skeleton-text-lg" />
-            <div className="skeleton skeleton-text-sm" />
+      <BackgroundSlideshow className="bg-slideshow-content-top">
+        <div className="main-content">
+          <div className="page-header">
+            <div>
+              <div className="skeleton skeleton-text-lg" />
+              <div className="skeleton skeleton-text-sm" />
+            </div>
+            <div className="skeleton skeleton-badge" />
           </div>
-          <div className="skeleton skeleton-badge" />
+          <div className="skeleton-grid">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="skeleton skeleton-card" />
+            ))}
+          </div>
         </div>
-        <div className="skeleton-grid">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="skeleton skeleton-card" />
-          ))}
-        </div>
-      </div>
+      </BackgroundSlideshow>
     );
   }
 
   return (
-    <div className="main-content">
+    <BackgroundSlideshow className="bg-slideshow-content-top">
+      <div className="main-content">
       <div className="page-header">
         <div>
           <h2>My Trips</h2>
@@ -130,6 +134,7 @@ function Dashboard() {
         onCancel={() => setDeleteTarget(null)}
       />
     </div>
+    </BackgroundSlideshow>
   );
 }
 
