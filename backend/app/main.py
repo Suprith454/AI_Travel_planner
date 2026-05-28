@@ -6,11 +6,14 @@ from .routers import auth, trips, photos
 
 Base.metadata.create_all(bind=engine)
 
-with engine.connect() as conn:
-    insp = inspect(conn)
-    if "users" in insp.get_table_names() and "is_active" not in [c["name"] for c in insp.get_columns("users")]:
-        conn.execute(text("ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT 0"))
-        conn.commit()
+try:
+    with engine.connect() as conn:
+        insp = inspect(conn)
+        if "users" in insp.get_table_names() and "is_active" not in [c["name"] for c in insp.get_columns("users")]:
+            conn.execute(text("ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT 0"))
+            conn.commit()
+except Exception:
+    pass
 
 app = FastAPI(title="AI Travel Planner")
 
