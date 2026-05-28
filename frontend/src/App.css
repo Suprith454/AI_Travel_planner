@@ -239,6 +239,7 @@ body {
   padding: 32px 24px;
   min-height: calc(100vh - 64px);
   position: relative;
+  width: 100%;
 }
 
 .main-content::before {
