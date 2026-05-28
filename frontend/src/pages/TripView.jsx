@@ -6,40 +6,6 @@ import { trips, photos } from "../api";
 import { useToast } from "../components/Toast";
 import AskAI from "../components/AskAI";
 
-function formatHM(m) {
-  if (m == null) return "";
-  const h = Math.floor(m / 60);
-  const mn = m % 60;
-  return `${h.toString().padStart(2, "0")}:${mn.toString().padStart(2, "0")}`;
-}
-
-function timeToInput(t) {
-  if (!t) return "09:00";
-  const m = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
-  if (!m) return "09:00";
-  let h = parseInt(m[1]), mi = m[2], ap = m[3].toUpperCase();
-  if (ap === "PM" && h !== 12) h += 12;
-  if (ap === "AM" && h === 12) h = 0;
-  return `${h.toString().padStart(2, "0")}:${mi}`;
-}
-
-function inputToTime(v) {
-  if (!v) return "09:00 AM";
-  const [h, mi] = v.split(":").map(Number);
-  const ap = h >= 12 ? "PM" : "AM";
-  const hh = h === 0 ? 12 : h > 12 ? h - 12 : h;
-  return `${hh}:${mi.toString().padStart(2, "0")} ${ap}`;
-}
-
-function formatMinutes(m) {
-  if (m == null) return "";
-  const h = Math.floor(m / 60);
-  const mn = m % 60;
-  if (h > 0 && mn > 0) return `${h}h ${mn}m`;
-  if (h > 0) return `${h}h`;
-  return `${mn} min`;
-}
-
 function TripView() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -269,59 +235,8 @@ function TripView() {
                   <span className="day-number">{day.day}</span>
                   Day {day.day}
                 </h3>
-                <div className="day-time-summary">
-                  <span className="day-time-label">&#9200; {formatMinutes(day.time_used)}{day.time_budget != null ? ` / ${formatMinutes(day.time_budget)}` : ""}</span>
-                  {day.over_budget && <span className="day-time-warning">Over budget</span>}
-                </div>
               </div>
               {day.date && <span className="day-date" style={{ display: "block", marginBottom: 12 }}>{day.date}</span>}
-              <div className="day-time-window">
-                <span className="day-time-window-label">&#9200; Start</span>
-                <input
-                  type="time"
-                  className="day-time-input"
-                  value={timeToInput(day.day_start)}
-                  onChange={(e) => {
-                    const val = inputToTime(e.target.value);
-                    trips.patch(id, { action: "set_day_start", day_index: di, day_start_time: val }).then(setTrip).catch(() => addToast("Failed to update start time", "error"));
-                  }}
-                />
-                <span className="day-time-window-sep">&rarr;</span>
-                <span className="day-time-window-label">&#127968; End</span>
-                <input
-                  type="time"
-                  className="day-time-input"
-                  value={timeToInput(day.day_end)}
-                  onChange={(e) => {
-                    const val = inputToTime(e.target.value);
-                    trips.patch(id, { action: "set_day_end", day_index: di, day_end_time: val }).then(setTrip).catch(() => addToast("Failed to update end time", "error"));
-                  }}
-                />
-              </div>
-
-              {day.over_budget && day.suggestions && day.suggestions.length > 0 && (
-                <div className="suggestion-banner">
-                  <div className="suggestion-banner-header">&#9200; Ends at {day.day_end || "end of day"} &mdash; over by {formatMinutes(day.time_used - day.time_budget)}</div>
-                  {day.suggestions.map((s, si) => (
-                    <div key={si} className="suggestion-item">
-                      <span className="suggestion-icon">&#128161;</span>
-                      <span className="suggestion-text">{s.label}</span>
-                      <button
-                        className="btn btn-sm btn-primary"
-                        onClick={() => handleApply(di, {
-                          action: s.type,
-                          activity_index: s.activity_index,
-                          alternative_index: s.alternative_index,
-                          new_duration: s.type === "shorten" ? s.to : undefined,
-                        })}
-                        disabled={applying === `${di}-${s.type}`}
-                      >
-                        {applying === `${di}-${s.type}` ? <span className="spinner spinner-sm" /> : "Apply"}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
 
               {day.activities.map((act, i) => (
                 <div key={i}>

@@ -80,65 +80,6 @@ def optimize_day_schedule(day):
     day["time_budget"] = max(0, available)
     day["time_used"] = total
     day["over_budget"] = total > available
-    if day["over_budget"]:
-        day["suggestions"] = generate_suggestions(acts, total - available, day.get("day_end"))
-    else:
-        day["suggestions"] = []
-
-
-def generate_suggestions(activities, over_by, day_end=None):
-    suggestions = []
-    # Strategy 1: shorten the longest activity
-    longest_idx = None
-    longest_min = 0
-    for i, act in enumerate(activities):
-        d = parse_duration_minutes(act.get("duration", ""))
-        if d > longest_min:
-            longest_min = d
-            longest_idx = i
-    if longest_idx is not None and longest_min >= 60:
-        shortened = max(30, longest_min - over_by)
-        if shortened < longest_min:
-            suggestions.append({
-                "type": "shorten",
-                "activity_index": longest_idx,
-                "from": activities[longest_idx].get("duration", ""),
-                "to": f"{shortened} min",
-                "saves": longest_min - shortened,
-                "label": f"Shorten \"{activities[longest_idx]['name']}\" from {activities[longest_idx].get('duration', '')} to {shortened} min{' to fit by ' + day_end if day_end else ''}",
-            })
-    # Strategy 2: swap with a nearby alternative
-    for i, act in enumerate(activities):
-        alternatives = act.get("nearby_alternatives", [])
-        if alternatives:
-            alt = alternatives[0]
-            orig_dur = parse_duration_minutes(act.get("duration", ""))
-            alt_dur = parse_duration_minutes(alt.get("duration", ""))
-            transit = act.get("next_transit", {}).get("minutes", 0)
-            saved = orig_dur + transit - alt_dur
-            if saved > 15:
-                suggestions.append({
-                    "type": "swap",
-                    "activity_index": i,
-                    "alternative_index": 0,
-                    "alternative": alt,
-                    "saves": saved,
-                    "label": f"Visit {alt['name']} instead of \"{act['name']}\" (saves ~{saved} min)",
-                })
-    # Strategy 3: skip the last activity
-    if len(activities) >= 2:
-        last = activities[-1]
-        last_dur = parse_duration_minutes(last.get("duration", ""))
-        prev_transit = activities[-2].get("next_transit", {}).get("minutes", 0) if len(activities) >= 2 else 0
-        total_saved = last_dur + prev_transit
-        if total_saved > 15:
-            suggestions.append({
-                "type": "skip",
-                "activity_index": len(activities) - 1,
-                "saves": total_saved,
-                "label": f"Skip \"{last['name']}\" (saves ~{total_saved} min)",
-            })
-    return suggestions
 
 
 def build_mock_itinerary(destination):
@@ -353,21 +294,6 @@ def time_add(t, minutes):
     return f"{h}:{m:02d} {ap}"
 
 
-def recalculate_day_times(day):
-    acts = day.get("activities", [])
-    start = day.get("day_start", "09:00 AM")
-    for i, act in enumerate(acts):
-        if i == 0:
-            act["time"] = start
-        else:
-            prev = acts[i - 1]
-            prev_dur = parse_duration_minutes(prev.get("duration", ""))
-            prev_transit = prev.get("next_transit", {}).get("minutes", 0)
-            prev_time = prev.get("time")
-            if prev_time:
-                act["time"] = time_add(prev_time, prev_dur + prev_transit)
-
-
 def post_process_itinerary(itinerary_dict):
     for day in itinerary_dict.get("days", []):
         acts = day.get("activities", [])
@@ -505,17 +431,6 @@ def patch_trip(trip_id: int, body: PatchAction, db: Session = Depends(get_db)):
         if body.activity_index is None or body.activity_index < 0 or body.activity_index >= len(acts):
             raise HTTPException(status_code=400, detail="Invalid activity_index")
         day["activities"] = [a for j, a in enumerate(acts) if j != body.activity_index]
-
-    elif body.action == "set_day_start":
-        if not body.day_start_time:
-            raise HTTPException(status_code=400, detail="day_start_time required")
-        day["day_start"] = body.day_start_time
-        recalculate_day_times(day)
-
-    elif body.action == "set_day_end":
-        if not body.day_end_time:
-            raise HTTPException(status_code=400, detail="day_end_time required")
-        day["day_end"] = body.day_end_time
 
     else:
         raise HTTPException(status_code=400, detail=f"Unknown action: {body.action}")
