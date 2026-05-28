@@ -16,6 +16,7 @@ function Navbar() {
         {user ? (
           <>
             <Link to="/" className={location.pathname === "/" ? "active" : ""}>My Trips</Link>
+            <Link to="/chat" className={location.pathname === "/chat" ? "active" : ""}>AI Chat</Link>
             <Link to="/plan" className={location.pathname === "/plan" ? "active" : ""}>Plan Trip</Link>
             <div className="navbar-user">
               <span className="navbar-user-email">{user.name || user.email}</span>

@@ -26,6 +26,10 @@ export const trips = {
   delete: (tripId) => request(`/trips/${tripId}`, { method: "DELETE" }),
 };
 
+export const chat = {
+  plan: (message, userId) => request("/chat/plan", { method: "POST", body: JSON.stringify({ message, user_id: userId }) }),
+};
+
 export const photos = {
   search: (query) => request(`/photos?query=${encodeURIComponent(query)}`),
 };
