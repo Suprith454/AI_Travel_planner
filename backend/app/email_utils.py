@@ -1,5 +1,6 @@
 import os
 import smtplib
+import threading
 from email.mime.text import MIMEText
 
 SMTP_USER = os.getenv("SMTP_USER", "")
@@ -17,7 +18,7 @@ def send_email(to: str, subject: str, html: str) -> bool:
         msg["From"] = SMTP_USER
         msg["To"] = to
 
-        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+        with smtplib.SMTP("smtp.gmail.com", 587, timeout=10) as server:
             server.starttls()
             server.login(SMTP_USER, SMTP_PASS)
             server.sendmail(SMTP_USER, [to], msg.as_string())
@@ -25,6 +26,10 @@ def send_email(to: str, subject: str, html: str) -> bool:
     except Exception as e:
         print(f"Email send failed: {e}")
         return False
+
+
+def send_email_async(to: str, subject: str, html: str) -> None:
+    threading.Thread(target=send_email, args=(to, subject, html), daemon=True).start()
 
 
 def send_otp_email(to: str, code: str, purpose: str) -> bool:
@@ -61,10 +66,11 @@ def send_otp_email(to: str, code: str, purpose: str) -> bool:
         </div>
         """
 
-    return send_email(to, subject, html)
+    send_email_async(to, subject, html)
+    return True
 
 
-def send_welcome_email(to: str) -> bool:
+def send_welcome_email(to: str) -> None:
     subject = "Welcome to AI Travel Planner!"
     html = f"""
     <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#f8fafc;border-radius:16px;">
@@ -82,4 +88,4 @@ def send_welcome_email(to: str) -> bool:
         <p style="text-align:center;color:#94a3b8;font-size:12px;margin-top:20px;">Happy travels!</p>
     </div>
     """
-    return send_email(to, subject, html)
+    send_email_async(to, subject, html)
