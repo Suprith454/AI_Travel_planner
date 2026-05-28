@@ -11,14 +11,19 @@ const EXAMPLES = [
   "Plan a 2-day solo trip to Manali for ₹10,000, adventure and nature",
 ];
 
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+const supportsVoice = !!SpeechRecognition;
+
 function Chat() {
   const [messages, setMessages] = useState([
     { role: "bot", text: "🌍 Where would you like to travel? Tell me your destination, how many days, your budget, and what you're interested in!" },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [listening, setListening] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const recognitionRef = useRef(null);
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -30,9 +35,62 @@ function Chat() {
     inputRef.current?.focus();
   }, [loading]);
 
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.abort();
+      }
+    };
+  }, []);
+
+  const toggleMic = () => {
+    if (listening) {
+      stopListening();
+    } else {
+      startListening();
+    }
+  };
+
+  const startListening = () => {
+    if (!SpeechRecognition) return;
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.interimResults = true;
+    recognition.continuous = true;
+
+    recognition.onresult = (event) => {
+      let transcript = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      setInput(transcript);
+    };
+
+    recognition.onerror = () => {
+      setListening(false);
+    };
+
+    recognition.onend = () => {
+      setListening(false);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setListening(true);
+  };
+
+  const stopListening = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+    }
+    setListening(false);
+  };
+
   const handleSend = async () => {
     const msg = input.trim();
     if (!msg || loading) return;
+    if (listening) stopListening();
     setInput("");
     setMessages((prev) => [...prev, { role: "user", text: msg }]);
     setLoading(true);
@@ -115,10 +173,20 @@ function Chat() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Describe your dream trip..."
+          placeholder={listening ? "Listening..." : "Describe your dream trip..."}
           rows={1}
           disabled={loading}
         />
+        {supportsVoice && (
+          <button
+            className={`chat-mic-btn ${listening ? "recording" : ""}`}
+            onClick={toggleMic}
+            disabled={loading}
+            title={listening ? "Stop recording" : "Start voice input"}
+          >
+            {listening ? "🔴" : "🎤"}
+          </button>
+        )}
         <button
           className="chat-send-btn"
           onClick={handleSend}
