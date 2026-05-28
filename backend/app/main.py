@@ -15,6 +15,8 @@ try:
                 conn.execute(text("ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT 0"))
             if "name" not in cols:
                 conn.execute(text("ALTER TABLE users ADD COLUMN name VARCHAR DEFAULT ''"))
+            if "google_id" not in cols:
+                conn.execute(text("ALTER TABLE users ADD COLUMN google_id VARCHAR UNIQUE"))
             conn.commit()
 except Exception:
     pass

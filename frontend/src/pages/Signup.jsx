@@ -1,8 +1,9 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../AuthContext";
 import { auth } from "../api";
 import BackgroundSlideshow from "../components/BackgroundSlideshow";
+import GoogleLoginButton from "../components/GoogleLoginButton";
 
 function Signup() {
   const [step, setStep] = useState("form");
@@ -17,6 +18,20 @@ function Signup() {
   const otpRefs = useRef([]);
   const navigate = useNavigate();
   const { login } = useAuth();
+
+  const handleGoogleSuccess = useCallback(async (credential) => {
+    setError("");
+    setLoading(true);
+    try {
+      const data = await auth.google({ id_token: credential });
+      login({ id: data.user_id, email: data.email, name: data.name });
+      navigate("/");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [login, navigate]);
 
   const handleNameChange = (e) => {
     const val = e.target.value;
@@ -120,28 +135,40 @@ function Signup() {
         </div>
 
         {step === "form" ? (
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label>Name *</label>
-              <input type="text" value={name} onChange={handleNameChange} placeholder="Your full name" required />
+          <>
+            <form onSubmit={handleSubmit}>
+              <div className="form-group">
+                <label>Name *</label>
+                <input type="text" value={name} onChange={handleNameChange} placeholder="Your full name" required />
+              </div>
+              <div className="form-group">
+                <label>Email *</label>
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" required />
+              </div>
+              <div className="form-group">
+                <label>Password *</label>
+                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Create a password" required />
+              </div>
+              <div className="form-group">
+                <label>Confirm Password *</label>
+                <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirm your password" required />
+              </div>
+              {error && <p className="form-error">&#9888; {error}</p>}
+              <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: "100%", marginTop: 8 }}>
+                {loading ? <span className="spinner spinner-sm" /> : "Create Account"}
+              </button>
+            </form>
+
+            <div className="auth-divider">
+              <span>or</span>
             </div>
-            <div className="form-group">
-              <label>Email *</label>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" required />
-            </div>
-            <div className="form-group">
-              <label>Password *</label>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Create a password" required />
-            </div>
-            <div className="form-group">
-              <label>Confirm Password *</label>
-              <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirm your password" required />
-            </div>
-            {error && <p className="form-error">&#9888; {error}</p>}
-            <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: "100%", marginTop: 8 }}>
-              {loading ? <span className="spinner spinner-sm" /> : "Create Account"}
-            </button>
-          </form>
+
+            <GoogleLoginButton
+              onSuccess={handleGoogleSuccess}
+              onError={(e) => setError(e.message)}
+              label="Sign up with Google"
+            />
+          </>
         ) : (
           <div>
             <div className="otp-input-group" onPaste={handlePaste}>
