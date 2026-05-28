@@ -1,31 +1,31 @@
 import os
 import httpx
 
-RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
-FROM_EMAIL = "AI Travel Planner <onboarding@resend.dev>"
+SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY", "")
+FROM_EMAIL = os.getenv("FROM_EMAIL", "noreply@travelplanner.app")
 
 
 def send_email(to: str, subject: str, html: str) -> bool:
-    if not RESEND_API_KEY:
-        print("RESEND_API_KEY not set — skipping email")
+    if not SENDGRID_API_KEY:
+        print("SENDGRID_API_KEY not set — skipping email")
         return False
 
     try:
-        with httpx.Client(timeout=15) as client:
-            resp = client.post(
-                "https://api.resend.com/emails",
-                headers={
-                    "Authorization": f"Bearer {RESEND_API_KEY}",
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "from": FROM_EMAIL,
-                    "to": [to],
-                    "subject": subject,
-                    "html": html,
-                },
-            )
-            return resp.is_success
+        resp = httpx.post(
+            "https://api.sendgrid.com/v3/mail/send",
+            headers={
+                "Authorization": f"Bearer {SENDGRID_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "personalizations": [{"to": [{"email": to}]}],
+                "from": {"email": FROM_EMAIL},
+                "subject": subject,
+                "content": [{"type": "text/html", "value": html}],
+            },
+            timeout=15,
+        )
+        return resp.is_success
     except Exception as e:
         print(f"Email send failed: {e}")
         return False
