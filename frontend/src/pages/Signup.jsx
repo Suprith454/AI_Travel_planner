@@ -147,7 +147,7 @@ function Signup() {
             </div>
             {!emailSent && (
               <p className="form-hint" style={{ textAlign: "center", marginBottom: 12, color: "var(--warning)" }}>
-                Failed to send email. Check your SENDGRID_API_KEY on the server.
+                Failed to send email. Check your SMTP_USER / SMTP_PASS on the server.
               </p>
             )}
             {error && <p className="form-error" style={{ justifyContent: "center" }}>&#9888; {error}</p>}

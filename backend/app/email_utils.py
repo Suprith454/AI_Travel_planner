@@ -1,31 +1,27 @@
 import os
-import httpx
+import smtplib
+from email.mime.text import MIMEText
 
-SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY", "")
-FROM_EMAIL = os.getenv("FROM_EMAIL", "noreply@travelplanner.app")
+SMTP_USER = os.getenv("SMTP_USER", "")
+SMTP_PASS = os.getenv("SMTP_PASS", "")
 
 
 def send_email(to: str, subject: str, html: str) -> bool:
-    if not SENDGRID_API_KEY:
-        print("SENDGRID_API_KEY not set — skipping email")
+    if not SMTP_USER or not SMTP_PASS:
+        print("SMTP_USER or SMTP_PASS not set — skipping email")
         return False
 
     try:
-        resp = httpx.post(
-            "https://api.sendgrid.com/v3/mail/send",
-            headers={
-                "Authorization": f"Bearer {SENDGRID_API_KEY}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "personalizations": [{"to": [{"email": to}]}],
-                "from": {"email": FROM_EMAIL},
-                "subject": subject,
-                "content": [{"type": "text/html", "value": html}],
-            },
-            timeout=15,
-        )
-        return resp.is_success
+        msg = MIMEText(html, "html")
+        msg["Subject"] = subject
+        msg["From"] = SMTP_USER
+        msg["To"] = to
+
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(SMTP_USER, SMTP_PASS)
+            server.sendmail(SMTP_USER, [to], msg.as_string())
+        return True
     except Exception as e:
         print(f"Email send failed: {e}")
         return False
