@@ -12,9 +12,17 @@ try:
         if "users" in insp.get_table_names():
             cols = [c["name"] for c in insp.get_columns("users")]
             if "is_active" not in cols:
-                conn.execute(text("ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT 0"))
+                is_pg = "postgresql" in str(engine.url)
+                conn.execute(text(
+                    "ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT false" if is_pg
+                    else "ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT 0"
+                ))
             if "name" not in cols:
-                conn.execute(text("ALTER TABLE users ADD COLUMN name VARCHAR DEFAULT ''"))
+                is_pg = "postgresql" in str(engine.url)
+                conn.execute(text(
+                    'ALTER TABLE users ADD COLUMN "name" VARCHAR DEFAULT \'\'' if is_pg
+                    else "ALTER TABLE users ADD COLUMN name VARCHAR DEFAULT ''"
+                ))
             conn.commit()
 except Exception:
     pass
