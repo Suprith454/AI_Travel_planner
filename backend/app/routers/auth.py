@@ -9,9 +9,6 @@ import string
 from ..database import get_db
 from ..models import User, OTP
 from ..schemas import UserCreate, UserLogin, UserResponse, OTPRequest, OTPVerify, ResetPassword
-from ..email_utils import send_otp_email, send_welcome_email, SMTP_USER
-
-EMAIL_CONFIGURED = bool(SMTP_USER)
 
 router = APIRouter()
 
@@ -30,7 +27,7 @@ def clean_expired_otps(db: Session):
     db.commit()
 
 
-# ─── Signup OTP ────────────────────────────────────────────
+# ─── Signup ─────────────────────────────────────────────────
 
 @router.post("/signup")
 def signup(user_data: UserCreate, db: Session = Depends(get_db)):
@@ -38,59 +35,15 @@ def signup(user_data: UserCreate, db: Session = Depends(get_db)):
     if existing:
         if existing.is_active:
             raise HTTPException(status_code=400, detail="Email already registered")
-        else:
-            db.delete(existing)
-            db.commit()
+        db.delete(existing)
+        db.commit()
 
-    otp_code = generate_otp()
-    expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
-
-    clean_expired_otps(db)
-    db.query(OTP).filter(OTP.email == user_data.email, OTP.purpose == "signup").delete()
-
-    db.add(OTP(email=user_data.email, code=otp_code, purpose="signup", expires_at=expires_at))
-
-    user = User(name=user_data.name, email=user_data.email, hashed_password=hash_password(user_data.password), is_active=False)
+    user = User(name=user_data.name, email=user_data.email, hashed_password=hash_password(user_data.password), is_active=True)
     db.add(user)
-    db.commit()
-
-    print(f"OTP for {user_data.email} (signup): {otp_code}")
-    email_sent = send_otp_email(user_data.email, otp_code, "signup")
-    resp = {"message": "OTP sent to email", "email": user_data.email, "name": user_data.name, "email_sent": email_sent}
-    if not EMAIL_CONFIGURED:
-        resp["otp"] = otp_code
-    return resp
-
-
-# ─── Verify OTP ────────────────────────────────────────────
-
-@router.post("/verify-otp")
-def verify_otp(data: OTPVerify, db: Session = Depends(get_db)):
-    clean_expired_otps(db)
-
-    otp = db.query(OTP).filter(
-        OTP.email == data.email,
-        OTP.code == data.code,
-        OTP.purpose == data.purpose,
-        OTP.expires_at > datetime.now(timezone.utc),
-    ).first()
-
-    if not otp:
-        raise HTTPException(status_code=400, detail="Invalid or expired OTP")
-
-    user = db.query(User).filter(User.email == data.email).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    user.is_active = True
-    db.query(OTP).filter(OTP.email == data.email).delete()
     db.commit()
     db.refresh(user)
 
-    if data.purpose == "signup":
-        send_welcome_email(data.email)
-
-    return {"user_id": user.id, "email": user.email, "name": user.name, "message": "Verification successful"}
+    return {"user_id": user.id, "email": user.email, "name": user.name, "message": "Account created"}
 
 
 # ─── Login ────────────────────────────────────────────
@@ -100,8 +53,6 @@ def login(user_data: UserLogin, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == user_data.email).first()
     if not user or user.hashed_password != hash_password(user_data.password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    if not user.is_active:
-        raise HTTPException(status_code=403, detail="Please verify your email first. Check your inbox for the OTP.")
     return {"user_id": user.id, "email": user.email, "name": user.name, "message": "Login successful"}
 
 
