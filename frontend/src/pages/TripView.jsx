@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -15,10 +15,37 @@ function TripView() {
   const [mapModal, setMapModal] = useState(null);
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
+  const userMarkerRef = useRef(null);
+  const routeLayerRef = useRef(null);
+  const watchIdRef = useRef(null);
+  const destMarkerRef = useRef(null);
 
   useEffect(() => {
     loadTrip();
   }, [id]);
+
+  const fetchRoute = useCallback((map, fromLat, fromLng, toLat, toLng) => {
+    const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?geometries=geojson&overview=full`;
+    fetch(osrmUrl)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.code === "Ok" && data.routes.length > 0) {
+          if (routeLayerRef.current) {
+            map.removeLayer(routeLayerRef.current);
+          }
+          routeLayerRef.current = L.geoJSON(data.routes[0].geometry, {
+            style: { color: "#4f46e5", weight: 4, opacity: 0.8 },
+          }).addTo(map);
+
+          const bounds = L.latLngBounds([
+            [fromLat, fromLng],
+            [toLat, toLng],
+          ]);
+          map.fitBounds(bounds, { padding: [50, 50] });
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!mapModal || !mapRef.current) return;
@@ -27,6 +54,12 @@ function TripView() {
       mapInstance.current.remove();
       mapInstance.current = null;
     }
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+    userMarkerRef.current = null;
+    routeLayerRef.current = null;
 
     const map = L.map(mapRef.current, {
       zoomControl: true,
@@ -37,7 +70,7 @@ function TripView() {
       attribution: "&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors",
     }).addTo(map);
 
-    const marker = L.marker([mapModal.lat, mapModal.lng])
+    destMarkerRef.current = L.marker([mapModal.lat, mapModal.lng])
       .addTo(map)
       .bindPopup(`<b>${mapModal.name}</b>`)
       .openPopup();
@@ -47,48 +80,50 @@ function TripView() {
     mapInstance.current = map;
 
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
+      watchIdRef.current = navigator.geolocation.watchPosition(
         (pos) => {
-          const userLat = pos.coords.latitude;
-          const userLng = pos.coords.longitude;
+          const { latitude: lat, longitude: lng } = pos.coords;
 
-          L.marker([userLat, userLng])
-            .addTo(map)
-            .bindPopup("<b>Your Location</b>")
-            .openPopup();
+          if (userMarkerRef.current) {
+            userMarkerRef.current.setLatLng([lat, lng]);
+          } else {
+            const blueIcon = L.divIcon({
+              html: '<div style="width:20px;height:20px;background:#3b82f6;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>',
+              className: "",
+              iconSize: [20, 20],
+              iconAnchor: [10, 10],
+            });
+            userMarkerRef.current = L.marker([lat, lng], { icon: blueIcon })
+              .addTo(map)
+              .bindPopup("<b>Your Location</b>")
+              .openPopup();
+          }
 
-          const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${userLng},${userLat};${mapModal.lng},${mapModal.lat}?geometries=geojson&overview=full`;
-
-          fetch(osrmUrl)
-            .then((r) => r.json())
-            .then((data) => {
-              if (data.code === "Ok" && data.routes.length > 0) {
-                const route = data.routes[0].geometry;
-                L.geoJSON(route, {
-                  style: { color: "#4f46e5", weight: 4, opacity: 0.8 },
-                }).addTo(map);
-
-                const bounds = L.latLngBounds([
-                  [userLat, userLng],
-                  [mapModal.lat, mapModal.lng],
-                ]);
-                map.fitBounds(bounds, { padding: [50, 50] });
-              }
-            })
-            .catch(() => {});
+          fetchRoute(map, lat, lng, mapModal.lat, mapModal.lng);
         },
-        () => {},
-        { enableHighAccuracy: true, timeout: 10000 },
+        (err) => {
+          if (err.code === 1) {
+            map.setView([mapModal.lat, mapModal.lng], 14);
+          }
+        },
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 },
       );
     }
 
     return () => {
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
       if (mapInstance.current) {
         mapInstance.current.remove();
         mapInstance.current = null;
       }
+      userMarkerRef.current = null;
+      routeLayerRef.current = null;
+      destMarkerRef.current = null;
     };
-  }, [mapModal]);
+  }, [mapModal, fetchRoute]);
 
   const loadTrip = async () => {
     try {
@@ -265,7 +300,7 @@ function TripView() {
               style={{ height: 400, borderRadius: 12, overflow: "hidden" }}
             />
             <p className="form-hint" style={{ marginTop: 8, textAlign: "center" }}>
-              Blue line shows driving route from your location. Allow location access for directions.
+              Blue line shows live driving route from your location. Your position updates in real time as you move.
             </p>
           </div>
         </div>
