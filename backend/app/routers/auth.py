@@ -9,7 +9,9 @@ import string
 from ..database import get_db
 from ..models import User, OTP
 from ..schemas import UserCreate, UserLogin, UserResponse, OTPRequest, OTPVerify, ResetPassword
-from ..email_utils import send_otp_email, send_welcome_email
+from ..email_utils import send_otp_email, send_welcome_email, SMTP_USER
+
+EMAIL_CONFIGURED = bool(SMTP_USER)
 
 router = APIRouter()
 
@@ -52,8 +54,12 @@ def signup(user_data: UserCreate, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
 
+    print(f"OTP for {user_data.email} (signup): {otp_code}")
     email_sent = send_otp_email(user_data.email, otp_code, "signup")
-    return {"message": "OTP sent to email", "email": user_data.email, "name": user_data.name, "email_sent": email_sent}
+    resp = {"message": "OTP sent to email", "email": user_data.email, "name": user_data.name, "email_sent": email_sent}
+    if not EMAIL_CONFIGURED:
+        resp["otp"] = otp_code
+    return resp
 
 
 # ─── Verify OTP ────────────────────────────────────────────
@@ -117,8 +123,12 @@ def resend_otp(data: OTPRequest, db: Session = Depends(get_db)):
     db.add(OTP(email=data.email, code=otp_code, purpose=data.purpose, expires_at=expires_at))
     db.commit()
 
+    print(f"OTP for {data.email} ({data.purpose}): {otp_code}")
     email_sent = send_otp_email(data.email, otp_code, data.purpose)
-    return {"message": "OTP resent", "email_sent": email_sent}
+    resp = {"message": "OTP resent", "email_sent": email_sent}
+    if not EMAIL_CONFIGURED:
+        resp["otp"] = otp_code
+    return resp
 
 
 # ─── Forgot Password (send OTP) ────────────────────────────
@@ -137,8 +147,12 @@ def forgot_password(data: OTPRequest, db: Session = Depends(get_db)):
     db.add(OTP(email=data.email, code=otp_code, purpose="reset", expires_at=expires_at))
     db.commit()
 
+    print(f"OTP for {data.email} (reset): {otp_code}")
     email_sent = send_otp_email(data.email, otp_code, "reset")
-    return {"message": "Reset code sent to email", "email_sent": email_sent}
+    resp = {"message": "Reset code sent to email", "email_sent": email_sent}
+    if not EMAIL_CONFIGURED:
+        resp["otp"] = otp_code
+    return resp
 
 
 # ─── Reset Password ────────────────────────────────────────
