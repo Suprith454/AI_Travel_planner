@@ -107,11 +107,6 @@ body {
   padding: 24px;
 }
 
-.bg-slideshow-content-top {
-  align-items: flex-start;
-  justify-content: flex-start;
-}
-
 /* ============ NAVBAR ============ */
 
 .navbar {

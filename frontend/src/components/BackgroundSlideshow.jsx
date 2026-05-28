@@ -13,7 +13,7 @@ const PHOTOS = [
   "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&q=80&fit=crop",
 ];
 
-function BackgroundSlideshow({ children, className }) {
+function BackgroundSlideshow({ children }) {
   const [current, setCurrent] = useState(0);
   const [next, setNext] = useState(1);
   const [fading, setFading] = useState(false);
@@ -43,7 +43,7 @@ function BackgroundSlideshow({ children, className }) {
         />
       </div>
       <div className="bg-slideshow-overlay" />
-      <div className={`bg-slideshow-content${className ? " " + className : ""}`}>
+      <div className="bg-slideshow-content">
         {children}
       </div>
     </div>
