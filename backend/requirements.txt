@@ -5,4 +5,3 @@ psycopg2-binary
 python-dotenv
 httpx
 groq
-google-auth

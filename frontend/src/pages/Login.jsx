@@ -1,9 +1,8 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../AuthContext";
 import { auth } from "../api";
 import BackgroundSlideshow from "../components/BackgroundSlideshow";
-import GoogleLoginButton from "../components/GoogleLoginButton";
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -28,20 +27,6 @@ function Login() {
     }
   };
 
-  const handleGoogleSuccess = useCallback(async (credential) => {
-    setError("");
-    setLoading(true);
-    try {
-      const data = await auth.google({ id_token: credential });
-      login({ id: data.user_id, email: data.email, name: data.name });
-      navigate("/");
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [login, navigate]);
-
   return (
     <BackgroundSlideshow>
       <div className="auth-card">
@@ -59,7 +44,7 @@ function Login() {
             <label>Password</label>
             <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" required />
             <div style={{ textAlign: "right", marginTop: 4 }}>
-              <Link to="/forgot-password" style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", textDecoration: "none" }}>
+              <Link to="/forgot-password" style={{ fontSize: 13, color: "var(--text-muted)", textDecoration: "none" }}>
                 Forgot password?
               </Link>
             </div>
@@ -69,13 +54,6 @@ function Login() {
             {loading ? <span className="spinner spinner-sm" /> : "Sign In"}
           </button>
         </form>
-
-        <div className="auth-divider">
-          <span>or</span>
-        </div>
-
-        <GoogleLoginButton onSuccess={handleGoogleSuccess} onError={(e) => setError(e.message)} />
-
         <p className="auth-footer">
           Don't have an account? <Link to="/signup">Sign up</Link>
         </p>

@@ -19,7 +19,6 @@ export const auth = {
   login: (data) => request("/auth/login", { method: "POST", body: JSON.stringify(data) }),
   forgotPassword: (data) => request("/auth/forgot-password", { method: "POST", body: JSON.stringify(data) }),
   resetPassword: (data) => request("/auth/reset-password", { method: "POST", body: JSON.stringify(data) }),
-  google: (data) => request("/auth/google", { method: "POST", body: JSON.stringify(data) }),
 };
 
 export const trips = {

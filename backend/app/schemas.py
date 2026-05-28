@@ -41,10 +41,6 @@ class ResetPassword(BaseModel):
     new_password: str
 
 
-class GoogleAuth(BaseModel):
-    id_token: str
-
-
 class TripGenerate(BaseModel):
     destination: str
     start_date: Optional[str] = None

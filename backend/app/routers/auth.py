@@ -5,12 +5,10 @@ import hashlib
 import os
 import random
 import string
-from google.oauth2 import id_token
-from google.auth.transport import requests as google_requests
 
 from ..database import get_db
 from ..models import User, OTP
-from ..schemas import UserCreate, UserLogin, UserResponse, OTPRequest, OTPVerify, ResetPassword, GoogleAuth
+from ..schemas import UserCreate, UserLogin, UserResponse, OTPRequest, OTPVerify, ResetPassword
 from ..email_utils import send_otp_email, send_welcome_email
 
 router = APIRouter()
@@ -28,45 +26,6 @@ def generate_otp() -> str:
 def clean_expired_otps(db: Session):
     db.query(OTP).filter(OTP.expires_at < datetime.now(timezone.utc)).delete()
     db.commit()
-
-
-# ─── Google OAuth ──────────────────────────────────────────
-
-@router.post("/google")
-def google_auth(data: GoogleAuth, db: Session = Depends(get_db)):
-    client_id = os.getenv("GOOGLE_CLIENT_ID")
-    if not client_id:
-        raise HTTPException(status_code=500, detail="Google OAuth not configured on server")
-
-    try:
-        info = id_token.verify_oauth2_token(data.id_token, google_requests.Request(), client_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid Google token")
-
-    google_id = info.get("sub")
-    email = info.get("email")
-    name = info.get("name", "")
-
-    if not email or not google_id:
-        raise HTTPException(status_code=400, detail="Could not retrieve user info from Google")
-
-    user = db.query(User).filter((User.google_id == google_id) | (User.email == email)).first()
-
-    if user:
-        if user.google_id is None:
-            user.google_id = google_id
-        if not user.is_active:
-            user.is_active = True
-        user.name = name
-        db.commit()
-        db.refresh(user)
-        return {"user_id": user.id, "email": user.email, "name": user.name, "is_new": False}
-    else:
-        user = User(name=name, email=email, google_id=google_id, hashed_password=None, is_active=True)
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-        return {"user_id": user.id, "email": user.email, "name": user.name, "is_new": True}
 
 
 # ─── Signup OTP ────────────────────────────────────────────
