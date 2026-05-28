@@ -4,7 +4,7 @@ function ConfirmModal({ open, title, message, confirmLabel, cancelLabel, onConfi
   return (
     <div className="photo-modal-overlay" onClick={onCancel}>
       <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="confirm-modal-icon">
+        <div className={`confirm-modal-icon ${danger ? "danger" : ""}`}>
           {danger ? "!" : "?"}
         </div>
         <h3 className="confirm-modal-title">{title}</h3>

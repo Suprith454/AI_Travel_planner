@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { auth } from "../api";
+import BackgroundSlideshow from "../components/BackgroundSlideshow";
 
 function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -52,17 +53,17 @@ function ResetPassword() {
 
   if (!email) {
     return (
-      <div className="auth-page">
+      <BackgroundSlideshow>
         <div className="auth-card">
           <p className="text-center text-muted">No email provided. Go to <a href="/forgot-password">Forgot Password</a>.</p>
         </div>
-      </div>
+      </BackgroundSlideshow>
     );
   }
 
   if (success) {
     return (
-      <div className="auth-page">
+      <BackgroundSlideshow>
         <div className="auth-card" style={{ textAlign: "center" }}>
           <div
             style={{
@@ -75,12 +76,12 @@ function ResetPassword() {
           <h2>Password Reset</h2>
           <p className="auth-subtitle">Your password has been reset successfully. Redirecting to login...</p>
         </div>
-      </div>
+      </BackgroundSlideshow>
     );
   }
 
   return (
-    <div className="auth-page">
+    <BackgroundSlideshow>
       <div className="auth-card">
         <div className="auth-brand">
           <div className="auth-brand-icon">&#9992;</div>
@@ -122,7 +123,7 @@ function ResetPassword() {
           </button>
         </form>
       </div>
-    </div>
+    </BackgroundSlideshow>
   );
 }
 

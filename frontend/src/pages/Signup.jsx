@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../AuthContext";
 import { auth } from "../api";
+import BackgroundSlideshow from "../components/BackgroundSlideshow";
 
 function Signup() {
   const [step, setStep] = useState("form");
@@ -101,7 +102,7 @@ function Signup() {
   };
 
   return (
-    <div className="auth-page">
+    <BackgroundSlideshow>
       <div className="auth-card">
         <div className="auth-brand">
           <div className="auth-brand-icon">&#9992;</div>
@@ -183,7 +184,7 @@ function Signup() {
           </p>
         )}
       </div>
-    </div>
+    </BackgroundSlideshow>
   );
 }
 

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { auth } from "../api";
+import BackgroundSlideshow from "../components/BackgroundSlideshow";
 
 function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -25,7 +26,7 @@ function ForgotPassword() {
   };
 
   return (
-    <div className="auth-page">
+    <BackgroundSlideshow>
       <div className="auth-card">
         <div className="auth-brand">
           <div className="auth-brand-icon">&#9992;</div>
@@ -66,7 +67,7 @@ function ForgotPassword() {
           Remember your password? <Link to="/login">Sign in</Link>
         </p>
       </div>
-    </div>
+    </BackgroundSlideshow>
   );
 }
 
