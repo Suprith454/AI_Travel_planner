@@ -28,6 +28,7 @@ export const trips = {
 
 export const chat = {
   plan: (message, userId) => request("/chat/plan", { method: "POST", body: JSON.stringify({ message, user_id: userId }) }),
+  ask: (tripId, question, history) => request("/chat/ask", { method: "POST", body: JSON.stringify({ trip_id: tripId, question, history }) }),
 };
 
 export const photos = {

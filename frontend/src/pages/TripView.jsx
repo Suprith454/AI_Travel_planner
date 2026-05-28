@@ -4,6 +4,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { trips, photos } from "../api";
 import { useToast } from "../components/Toast";
+import AskAI from "../components/AskAI";
 
 function formatHM(m) {
   if (m == null) return "";
@@ -478,6 +479,8 @@ function TripView() {
           </div>
         </div>
       )}
+
+      <AskAI tripId={id} />
     </div>
   );
 }

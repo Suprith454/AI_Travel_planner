@@ -186,3 +186,80 @@ def chat_plan(data: ChatPlanRequest, db: Session = Depends(get_db)):
             "created_at": trip.created_at.isoformat() if trip.created_at else None,
         },
     }
+
+
+class ChatAskRequest(BaseModel):
+    trip_id: int
+    question: str
+    history: list[dict] | None = None
+
+
+def make_trip_context(trip) -> str:
+    it = trip.itinerary or {}
+    days = it.get("days", [])
+    lines = [
+        f"Title: {trip.title}",
+        f"Destination: {trip.destination}",
+        f"Budget: {trip.budget or 'Not specified'}",
+        f"Interests: {trip.interests or 'General'}",
+        "",
+        "--- FULL ITINERARY ---",
+    ]
+    for day in days:
+        lines.append(f"\nDay {day.get('day', '?')} ({day.get('date', '')}):")
+        lines.append(f"  Time window: {day.get('day_start', '?')} → {day.get('day_end', '?')}")
+        lines.append(f"  Time used: {day.get('time_used', '?')}min / {day.get('time_budget', '?')}min budget")
+        if day.get("over_budget"):
+            lines.append("  ⚠ OVER BUDGET")
+        for act in day.get("activities", []):
+            transit = act.get("next_transit", {})
+            transit_str = f" → {transit.get('mode', '?')} {transit.get('minutes', '?')}min" if transit else ""
+            dur = act.get("duration", "")
+            t = act.get("time", "")
+            cost = act.get("cost", "")
+            cat = act.get("category", "")
+            lines.append(f"  {t} {act.get('name', '?')} ({dur}, {cost}) [{cat}]{transit_str}")
+            if act.get("nearby_alternatives"):
+                for alt in act["nearby_alternatives"][:1]:
+                    lines.append(f"    Nearby: {alt.get('name', '')} ({alt.get('duration', '')})")
+    return "\n".join(lines)
+
+
+@router.post("/ask")
+def chat_ask(data: ChatAskRequest, db: Session = Depends(get_db)):
+    trip = db.query(Trip).filter(Trip.id == data.trip_id).first()
+    if not trip:
+        raise HTTPException(status_code=404, detail="Trip not found")
+
+    context = make_trip_context(trip)
+
+    messages = [{"role": "system", "content": (
+        "You are a travel assistant helping a user with their trip. "
+        "Answer questions based on the trip itinerary provided below. "
+        "Be friendly, concise, and specific to their trip. "
+        "Use the itinerary data (times, costs, coordinates, nearby alternatives, transit) to give accurate answers. "
+        "If they ask about the schedule, weather, or recommendations, reference their actual plan. "
+        "If you don't know something, say so honestly. Keep answers under 150 words.\n\n"
+        f"--- TRIP DATA ---\n{context}"
+    )}]
+
+    for msg in (data.history or [])[-6:]:
+        role = "assistant" if msg.get("role") == "bot" else "user"
+        content = msg.get("text", msg.get("content", ""))
+        if content:
+            messages.append({"role": role, "content": content})
+
+    messages.append({"role": "user", "content": data.question})
+
+    if USE_MOCK or not groq_client:
+        return {"answer": "Based on your itinerary, I'd recommend checking the activity details in each day card. The map shows all locations and you can find nearby alternatives using the 🗺 Nearby button on any activity."}
+
+    try:
+        resp = groq_client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=messages,
+        )
+        answer = resp.choices[0].message.content.strip()
+        return {"answer": answer}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AI error: {str(e)}")
