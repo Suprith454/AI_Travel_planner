@@ -17,7 +17,7 @@ function Login() {
     setLoading(true);
     try {
       const data = await auth.login({ email, password });
-      login({ id: data.user_id, email: data.email });
+      login({ id: data.user_id, email: data.email, name: data.name });
       navigate("/");
     } catch (err) {
       setError(err.message);

@@ -9,8 +9,12 @@ Base.metadata.create_all(bind=engine)
 try:
     with engine.connect() as conn:
         insp = inspect(conn)
-        if "users" in insp.get_table_names() and "is_active" not in [c["name"] for c in insp.get_columns("users")]:
-            conn.execute(text("ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT 0"))
+        if "users" in insp.get_table_names():
+            cols = [c["name"] for c in insp.get_columns("users")]
+            if "is_active" not in cols:
+                conn.execute(text("ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT 0"))
+            if "name" not in cols:
+                conn.execute(text("ALTER TABLE users ADD COLUMN name VARCHAR DEFAULT ''"))
             conn.commit()
 except Exception:
     pass

@@ -18,8 +18,8 @@ function Navbar() {
             <Link to="/" className={location.pathname === "/" ? "active" : ""}>My Trips</Link>
             <Link to="/plan" className={location.pathname === "/plan" ? "active" : ""}>Plan Trip</Link>
             <div className="navbar-user">
-              <span className="navbar-user-email">{user.email}</span>
-              <span className="navbar-avatar">{user.email?.charAt(0).toUpperCase()}</span>
+              <span className="navbar-user-email">{user.name || user.email}</span>
+              <span className="navbar-avatar">{(user.name || user.email)?.charAt(0).toUpperCase()}</span>
               <button className="btn btn-outline btn-sm btn-logout" onClick={() => { logout(); navigate("/login"); }}>
                 Logout
               </button>

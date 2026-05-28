@@ -5,6 +5,7 @@ import { auth } from "../api";
 
 function Signup() {
   const [step, setStep] = useState("form");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -16,16 +17,25 @@ function Signup() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
+  const handleNameChange = (e) => {
+    const val = e.target.value;
+    if (/^[a-zA-Z\s]*$/.test(val)) setName(val);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    if (!name.trim()) {
+      setError("Name is required");
+      return;
+    }
     if (password !== confirmPassword) {
       setError("Passwords do not match");
       return;
     }
     setLoading(true);
     try {
-      const data = await auth.signup({ email, password });
+      const data = await auth.signup({ name: name.trim(), email, password });
       setEmailSent(data.email_sent !== false);
       setStep("otp");
     } catch (err) {
@@ -57,7 +67,7 @@ function Signup() {
     setLoading(true);
     try {
       const data = await auth.verifyOtp({ email, code, purpose: "signup" });
-      login({ id: data.user_id, email: data.email });
+      login({ id: data.user_id, email: data.email, name: data.name });
       navigate("/");
     } catch (err) {
       setError(err.message);
@@ -111,15 +121,19 @@ function Signup() {
         {step === "form" ? (
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label>Email</label>
+              <label>Name *</label>
+              <input type="text" value={name} onChange={handleNameChange} placeholder="Your full name" required />
+            </div>
+            <div className="form-group">
+              <label>Email *</label>
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" required />
             </div>
             <div className="form-group">
-              <label>Password</label>
+              <label>Password *</label>
               <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Create a password" required />
             </div>
             <div className="form-group">
-              <label>Confirm Password</label>
+              <label>Confirm Password *</label>
               <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirm your password" required />
             </div>
             {error && <p className="form-error">&#9888; {error}</p>}

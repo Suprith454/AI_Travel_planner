@@ -48,12 +48,12 @@ def signup(user_data: UserCreate, db: Session = Depends(get_db)):
 
     db.add(OTP(email=user_data.email, code=otp_code, purpose="signup", expires_at=expires_at))
 
-    user = User(email=user_data.email, hashed_password=hash_password(user_data.password), is_active=False)
+    user = User(name=user_data.name, email=user_data.email, hashed_password=hash_password(user_data.password), is_active=False)
     db.add(user)
     db.commit()
 
     email_sent = send_otp_email(user_data.email, otp_code, "signup")
-    return {"message": "OTP sent to email", "email": user_data.email, "email_sent": email_sent}
+    return {"message": "OTP sent to email", "email": user_data.email, "name": user_data.name, "email_sent": email_sent}
 
 
 # ─── Verify OTP ────────────────────────────────────────────
@@ -84,7 +84,7 @@ def verify_otp(data: OTPVerify, db: Session = Depends(get_db)):
     if data.purpose == "signup":
         send_welcome_email(data.email)
 
-    return {"user_id": user.id, "email": user.email, "message": "Verification successful"}
+    return {"user_id": user.id, "email": user.email, "name": user.name, "message": "Verification successful"}
 
 
 # ─── Login ────────────────────────────────────────────
@@ -96,7 +96,7 @@ def login(user_data: UserLogin, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Please verify your email first. Check your inbox for the OTP.")
-    return {"user_id": user.id, "email": user.email, "message": "Login successful"}
+    return {"user_id": user.id, "email": user.email, "name": user.name, "message": "Login successful"}
 
 
 # ─── Resend OTP ────────────────────────────────────────────
