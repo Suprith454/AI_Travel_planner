@@ -14,15 +14,13 @@ function App() {
   return (
     <>
       <Navbar />
-      <main>
-        <Routes>
-          <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
-          <Route path="/signup" element={user ? <Navigate to="/" /> : <Signup />} />
-          <Route path="/" element={user ? <Dashboard /> : <Navigate to="/login" />} />
-          <Route path="/plan" element={user ? <PlanTrip /> : <Navigate to="/login" />} />
-          <Route path="/trips/:id" element={user ? <TripView /> : <Navigate to="/login" />} />
-        </Routes>
-      </main>
+      <Routes>
+        <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
+        <Route path="/signup" element={user ? <Navigate to="/" /> : <Signup />} />
+        <Route path="/" element={user ? <Dashboard /> : <Navigate to="/login" />} />
+        <Route path="/plan" element={user ? <PlanTrip /> : <Navigate to="/login" />} />
+        <Route path="/trips/:id" element={user ? <TripView /> : <Navigate to="/login" />} />
+      </Routes>
     </>
   );
 }

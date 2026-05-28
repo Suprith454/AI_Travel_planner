@@ -35,35 +35,60 @@ function PlanTrip() {
   };
 
   return (
-    <div>
-      <h2 style={{ marginBottom: 20 }}>Plan a New Trip</h2>
+    <div className="main-content">
+      <div className="page-header">
+        <div>
+          <h2>Plan a New Trip</h2>
+          <p className="text-muted">Tell us about your dream destination</p>
+        </div>
+      </div>
+
       <div className="card">
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Destination *</label>
             <input name="destination" value={form.destination} onChange={handleChange} placeholder="e.g., Paris, France" required />
           </div>
-          <div style={{ display: "flex", gap: 12 }}>
-            <div className="form-group" style={{ flex: 1 }}>
-              <label>Start Date</label>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label>Start Date *</label>
               <input type="date" name="start_date" value={form.start_date} onChange={handleChange} required />
             </div>
-            <div className="form-group" style={{ flex: 1 }}>
-              <label>End Date</label>
+            <div className="form-group">
+              <label>End Date *</label>
               <input type="date" name="end_date" value={form.end_date} onChange={handleChange} min={form.start_date || undefined} required />
             </div>
           </div>
-          <div className="form-group">
-            <label>Budget</label>
-            <input name="budget" value={form.budget} onChange={handleChange} placeholder="e.g., $1000" required />
+
+          <div className="form-row">
+            <div className="form-group">
+              <label>Budget *</label>
+              <input name="budget" value={form.budget} onChange={handleChange} placeholder="e.g., $1000" required />
+            </div>
+            <div className="form-group">
+              <label>Travelers *</label>
+              <input name="travelers" value={form.travelers} onChange={handleChange} placeholder="e.g., 2" type="number" min="1" required />
+            </div>
           </div>
+
           <div className="form-group">
-            <label>Interests</label>
-            <textarea name="interests" value={form.interests} onChange={handleChange} placeholder="e.g., food, history, adventure, nature" rows={3} required />
+            <label>Interests *</label>
+            <textarea name="interests" value={form.interests} onChange={handleChange} placeholder="e.g., food, history, adventure, nature, museums, shopping" rows={3} required />
+            <p className="form-hint">Separate interests with commas</p>
           </div>
-          {error && <p className="error">{error}</p>}
-          <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: "100%" }}>
-            {loading ? "Generating..." : "Generate Itinerary"}
+
+          {error && <p className="form-error">&#9888; {error}</p>}
+
+          <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: "100%", marginTop: 8 }}>
+            {loading ? (
+              <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span className="spinner spinner-sm" />
+                Generating with AI...
+              </span>
+            ) : (
+              "Generate Itinerary"
+            )}
           </button>
         </form>
       </div>

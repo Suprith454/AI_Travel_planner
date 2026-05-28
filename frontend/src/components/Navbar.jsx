@@ -1,27 +1,34 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../AuthContext";
 
 function Navbar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, logout } = useAuth();
 
   return (
-    <nav>
-      <Link to="/" style={{ textDecoration: "none" }}>
-        <h1>AI Travel Planner</h1>
+    <nav className="navbar">
+      <Link to="/" className="navbar-brand">
+        <span className="navbar-brand-icon">&#9992;</span>
+        AI Travel Planner
       </Link>
-      <div>
+      <div className="navbar-links">
         {user ? (
           <>
-            <Link to="/plan">Plan Trip</Link>
-            <Link to="/">My Trips</Link>
-            <span style={{ fontSize: 13, color: "#888" }}>{user.email}</span>
-            <button onClick={() => { logout(); navigate("/login"); }}>Logout</button>
+            <Link to="/" className={location.pathname === "/" ? "active" : ""}>My Trips</Link>
+            <Link to="/plan" className={location.pathname === "/plan" ? "active" : ""}>Plan Trip</Link>
+            <div className="navbar-user">
+              <span className="navbar-user-email">{user.email}</span>
+              <span className="navbar-avatar">{user.email?.charAt(0).toUpperCase()}</span>
+              <button className="btn btn-outline btn-sm btn-logout" onClick={() => { logout(); navigate("/login"); }}>
+                Logout
+              </button>
+            </div>
           </>
         ) : (
           <>
-            <Link to="/login">Login</Link>
-            <Link to="/signup">Signup</Link>
+            <Link to="/login" className={location.pathname === "/login" ? "active" : ""}>Login</Link>
+            <Link to="/signup" className={location.pathname === "/signup" ? "active" : ""}>Sign Up</Link>
           </>
         )}
       </div>

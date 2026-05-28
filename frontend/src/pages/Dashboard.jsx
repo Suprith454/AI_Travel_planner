@@ -32,35 +32,68 @@ function Dashboard() {
     }
   };
 
-  if (loading) return <p style={{ textAlign: "center", marginTop: 40 }}>Loading...</p>;
+  if (loading) {
+    return (
+      <div className="loading-page">
+        <div className="spinner" />
+        <p className="loading-text">Loading your trips...</p>
+      </div>
+    );
+  }
 
   return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-        <h2>My Trips</h2>
+    <div className="main-content">
+      <div className="page-header">
+        <div>
+          <h2>My Trips</h2>
+          <p className="text-muted">{tripList.length} trip{tripList.length !== 1 ? "s" : ""} planned</p>
+        </div>
         <button className="btn btn-primary" onClick={() => navigate("/plan")}>
-          Plan New Trip
+          + Plan New Trip
         </button>
       </div>
+
       {tripList.length === 0 ? (
-        <div className="card" style={{ textAlign: "center" }}>
-          <p>No trips yet. Plan your first trip!</p>
+        <div className="empty-state">
+          <div className="empty-state-icon">&#9992;</div>
+          <h3>No trips yet</h3>
+          <p>Plan your first adventure!</p>
+          <button className="btn btn-primary" onClick={() => navigate("/plan")}>
+            Plan a Trip
+          </button>
         </div>
       ) : (
-        tripList.map((trip) => (
-          <div key={trip.id} className="trip-card" onClick={() => navigate(`/trips/${trip.id}`)}>
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <div>
-                <h3>{trip.title}</h3>
-                <p>{trip.destination}{trip.start_date ? ` | ${trip.start_date} to ${trip.end_date}` : ""}</p>
-                {trip.budget && <p>Budget: {trip.budget}</p>}
+        <div className="trip-grid">
+          {tripList.map((trip) => (
+            <div key={trip.id} className="trip-card" onClick={() => navigate(`/trips/${trip.id}`)}>
+              <div className="trip-card-delete">
+                <button className="btn btn-danger btn-sm" onClick={(e) => handleDelete(e, trip.id)}>
+                  Delete
+                </button>
               </div>
-              <button className="btn btn-danger" onClick={(e) => handleDelete(e, trip.id)} style={{ fontSize: 12, padding: "4px 10px" }}>
-                Delete
-              </button>
+              <div className="trip-card-top">
+                <div>
+                  <div className="trip-card-destination">{trip.destination}</div>
+                  {trip.start_date && (
+                    <div className="trip-card-dates">
+                      {trip.start_date} &rarr; {trip.end_date}
+                    </div>
+                  )}
+                </div>
+              </div>
+              {trip.budget && (
+                <div className="trip-card-budget">&#128176; {trip.budget}</div>
+              )}
+              {trip.interests && (
+                <div className="trip-card-interests">
+                  {trip.interests.split(",").map((interest, i) => (
+                    <span key={i} className="trip-meta-badge interest">{interest.trim()}</span>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
-        ))
+          ))}
+        </div>
       )}
     </div>
   );
