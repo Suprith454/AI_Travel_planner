@@ -30,6 +30,8 @@ class PatchAction(BaseModel):
     alternative_index: int | None = None
     new_duration: str | None = None
     new_order: list[int] | None = None
+    day_start_time: str | None = None
+    day_end_time: str | None = None
 
 
 class TripResponse(BaseModel):

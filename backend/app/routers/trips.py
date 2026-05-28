@@ -64,23 +64,29 @@ def inject_transit(activities):
 
 
 def optimize_day_schedule(day):
-    available = 12 * 60
+    start_min = parse_time_to_minutes(day.get("day_start"))
+    end_min = parse_time_to_minutes(day.get("day_end"))
+    if start_min is not None and end_min is not None:
+        available = end_min - start_min
+    else:
+        available = 12 * 60
+
     total = 0
     acts = day.get("activities", [])
     for i, act in enumerate(acts):
         total += parse_duration_minutes(act.get("duration", ""))
         if "next_transit" in act:
             total += act["next_transit"]["minutes"]
-    day["time_budget"] = available
+    day["time_budget"] = max(0, available)
     day["time_used"] = total
     day["over_budget"] = total > available
     if day["over_budget"]:
-        day["suggestions"] = generate_suggestions(acts, total - available)
+        day["suggestions"] = generate_suggestions(acts, total - available, day.get("day_end"))
     else:
         day["suggestions"] = []
 
 
-def generate_suggestions(activities, over_by):
+def generate_suggestions(activities, over_by, day_end=None):
     suggestions = []
     # Strategy 1: shorten the longest activity
     longest_idx = None
@@ -99,7 +105,7 @@ def generate_suggestions(activities, over_by):
                 "from": activities[longest_idx].get("duration", ""),
                 "to": f"{shortened} min",
                 "saves": longest_min - shortened,
-                "label": f"Shorten \"{activities[longest_idx]['name']}\" from {activities[longest_idx].get('duration', '')} to {shortened} min",
+                "label": f"Shorten \"{activities[longest_idx]['name']}\" from {activities[longest_idx].get('duration', '')} to {shortened} min{' to fit by ' + day_end if day_end else ''}",
             })
     # Strategy 2: swap with a nearby alternative
     for i, act in enumerate(activities):
@@ -347,11 +353,35 @@ def time_add(t, minutes):
     return f"{h}:{m:02d} {ap}"
 
 
+def recalculate_day_times(day):
+    acts = day.get("activities", [])
+    start = day.get("day_start", "09:00 AM")
+    for i, act in enumerate(acts):
+        if i == 0:
+            act["time"] = start
+        else:
+            prev = acts[i - 1]
+            prev_dur = parse_duration_minutes(prev.get("duration", ""))
+            prev_transit = prev.get("next_transit", {}).get("minutes", 0)
+            prev_time = prev.get("time")
+            if prev_time:
+                act["time"] = time_add(prev_time, prev_dur + prev_transit)
+
+
 def post_process_itinerary(itinerary_dict):
     for day in itinerary_dict.get("days", []):
         acts = day.get("activities", [])
         inject_transit(acts)
-        # Auto-fill time if missing (based on previous activity time + duration + transit)
+        # Set default day_start from first activity time
+        if not day.get("day_start") and acts and acts[0].get("time"):
+            day["day_start"] = acts[0]["time"]
+        # Set default day_end (12 hours after start, or 9 PM)
+        if not day.get("day_end"):
+            if day.get("day_start"):
+                day["day_end"] = time_add(day["day_start"], 12 * 60)
+            else:
+                day["day_end"] = "09:00 PM"
+        # Auto-fill time if missing
         for i, act in enumerate(acts):
             if not act.get("time") and i > 0:
                 prev = acts[i - 1]
@@ -361,7 +391,12 @@ def post_process_itinerary(itinerary_dict):
                 if prev_time:
                     act["time"] = time_add(prev_time, prev_dur + prev_transit)
             if not act.get("time"):
-                act["time"] = f"{9 + i}:00 AM"
+                day_start = day.get("day_start", "09:00 AM")
+                start_min = parse_time_to_minutes(day_start)
+                if start_min is not None:
+                    act["time"] = time_add(day_start, i * 60)
+                else:
+                    act["time"] = f"{9 + i}:00 AM"
         optimize_day_schedule(day)
     return itinerary_dict
 
@@ -470,6 +505,17 @@ def patch_trip(trip_id: int, body: PatchAction, db: Session = Depends(get_db)):
         if body.activity_index is None or body.activity_index < 0 or body.activity_index >= len(acts):
             raise HTTPException(status_code=400, detail="Invalid activity_index")
         day["activities"] = [a for j, a in enumerate(acts) if j != body.activity_index]
+
+    elif body.action == "set_day_start":
+        if not body.day_start_time:
+            raise HTTPException(status_code=400, detail="day_start_time required")
+        day["day_start"] = body.day_start_time
+        recalculate_day_times(day)
+
+    elif body.action == "set_day_end":
+        if not body.day_end_time:
+            raise HTTPException(status_code=400, detail="day_end_time required")
+        day["day_end"] = body.day_end_time
 
     else:
         raise HTTPException(status_code=400, detail=f"Unknown action: {body.action}")
