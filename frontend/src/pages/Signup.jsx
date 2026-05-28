@@ -14,6 +14,7 @@ function Signup() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(true);
+  const [otpFromServer, setOtpFromServer] = useState(null);
   const otpRefs = useRef([]);
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -38,6 +39,7 @@ function Signup() {
     try {
       const data = await auth.signup({ name: name.trim(), email, password });
       setEmailSent(data.email_sent !== false);
+      if (data.otp) setOtpFromServer(data.otp);
       setStep("otp");
     } catch (err) {
       setError(err.message);
@@ -82,6 +84,7 @@ function Signup() {
     try {
       const data = await auth.resendOtp({ email, purpose: "signup" });
       setEmailSent(data.email_sent !== false);
+      if (data.otp) setOtpFromServer(data.otp);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -114,7 +117,11 @@ function Signup() {
           ) : (
             <>
               <h2>Verify Email</h2>
-              <p className="auth-subtitle">Enter the 6-digit code sent to {email}</p>
+              <p className="auth-subtitle">
+                {otpFromServer
+                  ? `Your verification code is: ${otpFromServer}`
+                  : `Enter the 6-digit code sent to ${email}`}
+              </p>
             </>
           )}
         </div>
