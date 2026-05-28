@@ -14,17 +14,6 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
-class OTP(Base):
-    __tablename__ = "otps"
-
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String, index=True, nullable=False)
-    code = Column(String, nullable=False)
-    purpose = Column(String, nullable=False)  # "signup" or "reset"
-    expires_at = Column(DateTime(timezone=True), nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-
-
 class Trip(Base):
     __tablename__ = "trips"
 

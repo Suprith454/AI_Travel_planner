@@ -1,6 +1,5 @@
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime
 
 
 class UserCreate(BaseModel):
@@ -12,33 +11,6 @@ class UserCreate(BaseModel):
 class UserLogin(BaseModel):
     email: str
     password: str
-
-
-class UserResponse(BaseModel):
-    id: int
-    name: str
-    email: str
-    is_active: bool
-    created_at: datetime
-
-    model_config = {"from_attributes": True}
-
-
-class OTPRequest(BaseModel):
-    email: str
-    purpose: str  # "signup" or "reset"
-
-
-class OTPVerify(BaseModel):
-    email: str
-    code: str
-    purpose: str
-
-
-class ResetPassword(BaseModel):
-    email: str
-    code: str
-    new_password: str
 
 
 class TripGenerate(BaseModel):

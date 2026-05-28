@@ -43,11 +43,7 @@ function Login() {
           <div className="form-group">
             <label>Password</label>
             <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" required />
-            <div style={{ textAlign: "right", marginTop: 4 }}>
-              <Link to="/forgot-password" style={{ fontSize: 13, color: "var(--text-muted)", textDecoration: "none" }}>
-                Forgot password?
-              </Link>
-            </div>
+
           </div>
           {error && <p className="form-error">&#9888; {error}</p>}
           <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: "100%", marginTop: 8 }}>
