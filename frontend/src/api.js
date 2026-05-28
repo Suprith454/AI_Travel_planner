@@ -22,6 +22,7 @@ export const trips = {
     request(`/trips/generate?user_id=${userId}`, { method: "POST", body: JSON.stringify(data) }),
   list: (userId) => request(`/trips/?user_id=${userId}`),
   get: (tripId) => request(`/trips/${tripId}`),
+  patch: (tripId, body) => request(`/trips/${tripId}`, { method: "PATCH", body: JSON.stringify(body) }),
   delete: (tripId) => request(`/trips/${tripId}`, { method: "DELETE" }),
 };
 

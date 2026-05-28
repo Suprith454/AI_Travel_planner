@@ -2,9 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import Trip
-from ..schemas import TripGenerate, TripResponse
+from ..schemas import TripGenerate, TripResponse, PatchAction
 import json
 import os
+import math
+import re
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -19,6 +21,120 @@ if not USE_MOCK:
     groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 
+def haversine_km(lat1, lng1, lat2, lng2):
+    R = 6371
+    dlat = math.radians(lat2 - lat1)
+    dlng = math.radians(lng2 - lng1)
+    a = math.sin(dlat / 2) ** 2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlng / 2) ** 2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return R * c
+
+
+def parse_duration_minutes(duration_str):
+    if not duration_str:
+        return 0
+    total = 0
+    for part in re.findall(r"(\d+\.?\d*)\s*(hr|h|min|m)", duration_str.lower()):
+        val = float(part[0])
+        unit = part[1]
+        if unit in ("hr", "h"):
+            total += val * 60
+        else:
+            total += val
+    return int(total)
+
+
+def inject_transit(activities):
+    for i, act in enumerate(activities):
+        if "next_transit" in act:
+            del act["next_transit"]
+        if i < len(activities) - 1:
+            nxt = activities[i + 1]
+            if act.get("lat") is not None and act.get("lng") is not None and nxt.get("lat") is not None and nxt.get("lng") is not None:
+                dist = haversine_km(act["lat"], act["lng"], nxt["lat"], nxt["lng"])
+                if dist < 2:
+                    minutes = max(1, round(dist / 5 * 60))
+                    mode = "walk"
+                else:
+                    minutes = max(1, round(dist / 30 * 60))
+                    mode = "drive"
+                act["next_transit"] = {"minutes": minutes, "mode": mode, "distance_km": round(dist, 2)}
+            else:
+                act["next_transit"] = {"minutes": 15, "mode": "drive", "distance_km": None}
+
+
+def optimize_day_schedule(day):
+    available = 12 * 60
+    total = 0
+    acts = day.get("activities", [])
+    for i, act in enumerate(acts):
+        total += parse_duration_minutes(act.get("duration", ""))
+        if "next_transit" in act:
+            total += act["next_transit"]["minutes"]
+    day["time_budget"] = available
+    day["time_used"] = total
+    day["over_budget"] = total > available
+    if day["over_budget"]:
+        day["suggestions"] = generate_suggestions(acts, total - available)
+    else:
+        day["suggestions"] = []
+
+
+def generate_suggestions(activities, over_by):
+    suggestions = []
+    # Strategy 1: shorten the longest activity
+    longest_idx = None
+    longest_min = 0
+    for i, act in enumerate(activities):
+        d = parse_duration_minutes(act.get("duration", ""))
+        if d > longest_min:
+            longest_min = d
+            longest_idx = i
+    if longest_idx is not None and longest_min >= 60:
+        shortened = max(30, longest_min - over_by)
+        if shortened < longest_min:
+            suggestions.append({
+                "type": "shorten",
+                "activity_index": longest_idx,
+                "from": activities[longest_idx].get("duration", ""),
+                "to": f"{shortened} min",
+                "saves": longest_min - shortened,
+                "label": f"Shorten \"{activities[longest_idx]['name']}\" from {activities[longest_idx].get('duration', '')} to {shortened} min",
+            })
+    # Strategy 2: swap with a nearby alternative
+    for i, act in enumerate(activities):
+        alternatives = act.get("nearby_alternatives", [])
+        if alternatives:
+            alt = alternatives[0]
+            orig_dur = parse_duration_minutes(act.get("duration", ""))
+            alt_dur = parse_duration_minutes(alt.get("duration", ""))
+            transit = act.get("next_transit", {}).get("minutes", 0)
+            saved = orig_dur + transit - alt_dur
+            if saved > 15:
+                suggestions.append({
+                    "type": "swap",
+                    "activity_index": i,
+                    "alternative_index": 0,
+                    "alternative": alt,
+                    "saves": saved,
+                    "label": f"Visit {alt['name']} instead of \"{act['name']}\" (saves ~{saved} min)",
+                })
+    # Strategy 3: skip the last activity
+    if len(activities) >= 2:
+        last = activities[-1]
+        last_dur = parse_duration_minutes(last.get("duration", ""))
+        prev_transit = activities[-2].get("next_transit", {}).get("minutes", 0) if len(activities) >= 2 else 0
+        total_saved = last_dur + prev_transit
+        if total_saved > 15:
+            suggestions.append({
+                "type": "skip",
+                "activity_index": len(activities) - 1,
+                "saves": total_saved,
+                "label": f"Skip \"{last['name']}\" (saves ~{total_saved} min)",
+            })
+    return suggestions
+
+
 def build_mock_itinerary(destination):
     return {
         "days": [
@@ -28,31 +144,63 @@ def build_mock_itinerary(destination):
                 "activities": [
                     {
                         "name": f"Arrival in {destination}",
+                        "time": "09:00 AM",
+                        "duration": "1 hr",
                         "description": "Check into your hotel and explore the local neighborhood.",
                         "cost": "Free",
-                        "lat": 28.6139,
-                        "lng": 77.2090,
+                        "lat": 28.6139, "lng": 77.2090,
+                        "category": "relaxation",
+                        "nearby_alternatives": [
+                            {"name": "Cafe Hop", "description": "Cozy cafe for a quick coffee break.", "duration": "30 min", "cost": "$5", "lat": 28.6150, "lng": 77.2100, "category": "food", "reason": "Across the street, zero transit time"}
+                        ]
                     },
                     {
                         "name": "City Center Walking Tour",
+                        "time": "10:15 AM",
+                        "duration": "2 hrs",
                         "description": "Guided walking tour of the main attractions and landmarks.",
                         "cost": "$25",
-                        "lat": 28.7041,
-                        "lng": 77.1025,
+                        "lat": 28.7041, "lng": 77.1025,
+                        "category": "sightseeing",
+                        "nearby_alternatives": [
+                            {"name": "Rickshaw Ride", "description": "Quick guided rickshaw tour of old city lanes.", "duration": "45 min", "cost": "$10", "lat": 28.7000, "lng": 77.1000, "category": "adventure", "reason": "Same starting point, 75% shorter duration"}
+                        ]
                     },
                     {
                         "name": "Local Cuisine Lunch",
+                        "time": "12:30 PM",
+                        "duration": "1 hr",
                         "description": "Try authentic local dishes at a highly-rated restaurant.",
                         "cost": "$20",
-                        "lat": 28.6304,
-                        "lng": 77.2177,
+                        "lat": 28.6304, "lng": 77.2177,
+                        "category": "food",
+                        "nearby_alternatives": [
+                            {"name": "Street Food Walk", "description": "Quick tasting tour of 3 famous street stalls.", "duration": "40 min", "cost": "$8", "lat": 28.6310, "lng": 77.2180, "category": "food", "reason": "Same block, faster, cheaper"}
+                        ]
+                    },
+                    {
+                        "name": "Historical Fort Visit",
+                        "time": "02:00 PM",
+                        "duration": "2.5 hrs",
+                        "description": "Explore the famous historic fort and its architecture.",
+                        "cost": "$15",
+                        "lat": 28.6562, "lng": 77.2410,
+                        "category": "sightseeing",
+                        "nearby_alternatives": [
+                            {"name": "Sound & Light Show", "description": "Evening show at the fort grounds — just 1 hr.", "duration": "1 hr", "cost": "$10", "lat": 28.6560, "lng": 77.2415, "category": "culture", "reason": "Same location, half the time"}
+                        ]
                     },
                     {
                         "name": "Evening Market Visit",
+                        "time": "05:00 PM",
+                        "duration": "1.5 hrs",
                         "description": "Explore the local market for souvenirs and street food.",
                         "cost": "$15",
-                        "lat": 28.6562,
-                        "lng": 77.2410,
+                        "lat": 28.6353, "lng": 77.2240,
+                        "category": "shopping",
+                        "nearby_alternatives": [
+                            {"name": "Sunset Rooftop Lounge", "description": "Rooftop bar with panoramic city views.", "duration": "45 min", "cost": "$12", "lat": 28.6360, "lng": 77.2230, "category": "nightlife", "reason": "2 min walk, perfect for sunset"}
+                        ]
                     },
                 ],
             },
@@ -61,32 +209,52 @@ def build_mock_itinerary(destination):
                 "date": "Day 2",
                 "activities": [
                     {
-                        "name": "Historical Monument Visit",
-                        "description": "Visit the most famous historical site in the area.",
-                        "cost": "$15",
-                        "lat": 28.5245,
-                        "lng": 77.1855,
+                        "name": "Temple Visit",
+                        "time": "08:00 AM",
+                        "duration": "1.5 hrs",
+                        "description": "Visit the most famous temple in the area.",
+                        "cost": "Free",
+                        "lat": 28.5245, "lng": 77.1855,
+                        "category": "culture",
+                        "nearby_alternatives": [
+                            {"name": "Garden Walk", "description": "Peaceful garden adjacent to the temple.", "duration": "30 min", "cost": "Free", "lat": 28.5250, "lng": 77.1840, "category": "relaxation", "reason": "Next door, quick visit"}
+                        ]
                     },
                     {
                         "name": "Museum Tour",
-                        "description": "Explore the local museum to learn about the culture and history.",
+                        "time": "10:00 AM",
+                        "duration": "2 hrs",
+                        "description": "Explore the local museum to learn about culture and history.",
                         "cost": "$10",
-                        "lat": 28.6180,
-                        "lng": 77.2320,
+                        "lat": 28.6180, "lng": 77.2320,
+                        "category": "culture",
+                        "nearby_alternatives": [
+                            {"name": "Art Gallery", "description": "Small gallery featuring local artists — quick walkthrough.", "duration": "40 min", "cost": "$5", "lat": 28.6190, "lng": 77.2300, "category": "culture", "reason": "2 blocks away, shorter visit"}
+                        ]
                     },
                     {
                         "name": "Nature Park",
+                        "time": "12:30 PM",
+                        "duration": "1.5 hrs",
                         "description": "Relax and enjoy a peaceful afternoon at the botanical garden.",
                         "cost": "Free",
-                        "lat": 28.5967,
-                        "lng": 77.2200,
+                        "lat": 28.5967, "lng": 77.2200,
+                        "category": "relaxation",
+                        "nearby_alternatives": [
+                            {"name": "Botanical Glasshouse", "description": "Indoor exotic plant exhibit — 20 min walkthrough.", "duration": "20 min", "cost": "$3", "lat": 28.5970, "lng": 77.2210, "category": "sightseeing", "reason": "Inside the park, very quick"}
+                        ]
                     },
                     {
                         "name": "Sunset Viewpoint",
+                        "time": "04:30 PM",
+                        "duration": "1 hr",
                         "description": "Watch the sunset from a famous viewpoint in the city.",
                         "cost": "Free",
-                        "lat": 28.6028,
-                        "lng": 77.2068,
+                        "lat": 28.6028, "lng": 77.2068,
+                        "category": "sightseeing",
+                        "nearby_alternatives": [
+                            {"name": "Lake Walk", "description": "Scenic walk around the nearby lake.", "duration": "35 min", "cost": "Free", "lat": 28.6035, "lng": 77.2050, "category": "relaxation", "reason": "Adjacent viewpoint area"}
+                        ]
                     },
                 ],
             },
@@ -95,37 +263,107 @@ def build_mock_itinerary(destination):
                 "date": "Day 3",
                 "activities": [
                     {
-                        "name": "Day Trip to Nearby Attraction",
-                        "description": "Take a short trip to a popular nearby destination.",
+                        "name": "Day Trip to Nearby Falls",
+                        "time": "07:00 AM",
+                        "duration": "3 hrs",
+                        "description": "Scenic waterfalls a short drive from the city center.",
                         "cost": "$40",
-                        "lat": 28.4870,
-                        "lng": 77.0670,
+                        "lat": 28.4870, "lng": 77.0670,
+                        "category": "adventure",
+                        "nearby_alternatives": [
+                            {"name": "River Rafting", "description": "Short white-water rafting experience (1.5 hrs).", "duration": "1.5 hrs", "cost": "$35", "lat": 28.4860, "lng": 77.0680, "category": "adventure", "reason": "Same location, shorter duration"}
+                        ]
                     },
                     {
                         "name": "Shopping at Local Bazaar",
+                        "time": "10:30 AM",
+                        "duration": "2 hrs",
                         "description": "Browse through traditional handicrafts and textiles.",
                         "cost": "$30",
-                        "lat": 28.6353,
-                        "lng": 77.2240,
+                        "lat": 28.6353, "lng": 77.2240,
+                        "category": "shopping",
+                        "nearby_alternatives": [
+                            {"name": "Handicraft Workshop", "description": "Watch artisans at work — 30 min demo.", "duration": "30 min", "cost": "Free", "lat": 28.6358, "lng": 77.2248, "category": "culture", "reason": "Inside the bazaar, very quick"}
+                        ]
                     },
                     {
                         "name": "Cooking Class",
+                        "time": "01:00 PM",
+                        "duration": "2 hrs",
                         "description": "Learn to cook authentic local dishes from a professional chef.",
                         "cost": "$35",
-                        "lat": 28.6190,
-                        "lng": 77.2340,
+                        "lat": 28.6190, "lng": 77.2340,
+                        "category": "food",
+                        "nearby_alternatives": [
+                            {"name": "Food Tasting Tour", "description": "Sample 5 local dishes at nearby stalls — 45 min.", "duration": "45 min", "cost": "$15", "lat": 28.6195, "lng": 77.2345, "category": "food", "reason": "Same neighborhood, quicker option"}
+                        ]
                     },
                     {
                         "name": "Farewell Dinner",
+                        "time": "06:00 PM",
+                        "duration": "2 hrs",
                         "description": "Special farewell dinner at a rooftop restaurant.",
                         "cost": "$50",
-                        "lat": 28.6280,
-                        "lng": 77.2080,
+                        "lat": 28.6280, "lng": 77.2080,
+                        "category": "food",
+                        "nearby_alternatives": [
+                            {"name": "Street Food Finale", "description": "Quick farewell feast at famous street stalls.", "duration": "1 hr", "cost": "$15", "lat": 28.6285, "lng": 77.2075, "category": "food", "reason": "Same roof area, half the time & cost"}
+                        ]
                     },
                 ],
             },
         ]
     }
+
+
+def parse_time_to_minutes(t):
+    if not t:
+        return None
+    m = re.match(r"(\d+):(\d+)\s*(AM|PM)", t, re.I)
+    if m:
+        h, mi, ap = int(m.group(1)), int(m.group(2)), m.group(3).upper()
+        if ap == "PM" and h != 12:
+            h += 12
+        elif ap == "AM" and h == 12:
+            h = 0
+        return h * 60 + mi
+    return None
+
+
+def time_add(t, minutes):
+    if not t:
+        return t
+    total = parse_time_to_minutes(t)
+    if total is None:
+        return t
+    total += minutes
+    h = total // 60 % 24
+    m = total % 60
+    ap = "AM" if h < 12 else "PM"
+    if h == 0:
+        h = 12
+    elif h > 12:
+        h -= 12
+    return f"{h}:{m:02d} {ap}"
+
+
+def post_process_itinerary(itinerary_dict):
+    for day in itinerary_dict.get("days", []):
+        acts = day.get("activities", [])
+        inject_transit(acts)
+        # Auto-fill time if missing (based on previous activity time + duration + transit)
+        for i, act in enumerate(acts):
+            if not act.get("time") and i > 0:
+                prev = acts[i - 1]
+                prev_dur = parse_duration_minutes(prev.get("duration", ""))
+                prev_transit = prev.get("next_transit", {}).get("minutes", 0)
+                prev_time = prev.get("time")
+                if prev_time:
+                    act["time"] = time_add(prev_time, prev_dur + prev_transit)
+            if not act.get("time"):
+                act["time"] = f"{9 + i}:00 AM"
+        optimize_day_schedule(day)
+    return itinerary_dict
 
 
 @router.post("/generate")
@@ -140,8 +378,10 @@ def generate_trip(data: TripGenerate, user_id: int, db: Session = Depends(get_db
             f"Dates: {data.start_date or 'N/A'} to {data.end_date or 'N/A'}. "
             "Provide a day-by-day itinerary with specific places, activities, "
             "approximate costs, and coordinates (lat/lng) for each place. "
+            "For each activity include a start time (time), duration (duration), "
+            "and 1-2 nearby_alternatives (each with name, description, duration, cost, lat, lng, category, reason why it's a good alternative when short on time). "
             "Return ONLY valid JSON with this exact structure (no markdown, no backticks): "
-            '{"days": [{"day": 1, "date": "...", "activities": [{"name": "...", "description": "...", "cost": "...", "lat": 0.0, "lng": 0.0}]}]}'
+            '{"days": [{"day": 1, "date": "...", "activities": [{"name": "...", "time": "...", "duration": "...", "description": "...", "cost": "...", "lat": 0.0, "lng": 0.0, "category": "...", "nearby_alternatives": [{"name": "...", "description": "...", "duration": "...", "cost": "...", "lat": 0.0, "lng": 0.0, "category": "...", "reason": "..."}]}]}]}'
         )
         try:
             response = groq_client.chat.completions.create(
@@ -156,6 +396,8 @@ def generate_trip(data: TripGenerate, user_id: int, db: Session = Depends(get_db
 
     if itinerary_dict is None:
         itinerary_dict = build_mock_itinerary(data.destination)
+
+    itinerary_dict = post_process_itinerary(itinerary_dict)
 
     title = f"Trip to {data.destination}"
     trip = Trip(
@@ -184,6 +426,61 @@ def get_trip(trip_id: int, db: Session = Depends(get_db)):
     trip = db.query(Trip).filter(Trip.id == trip_id).first()
     if not trip:
         raise HTTPException(status_code=404, detail="Trip not found")
+    return trip
+
+
+@router.patch("/{trip_id}")
+def patch_trip(trip_id: int, body: PatchAction, db: Session = Depends(get_db)):
+    trip = db.query(Trip).filter(Trip.id == trip_id).first()
+    if not trip:
+        raise HTTPException(status_code=404, detail="Trip not found")
+
+    itinerary = trip.itinerary
+    days = itinerary.get("days", [])
+    if body.day_index is None or body.day_index < 0 or body.day_index >= len(days):
+        raise HTTPException(status_code=400, detail="Invalid day_index")
+    day = days[body.day_index]
+    acts = day.get("activities", [])
+
+    if body.action == "shorten":
+        if body.activity_index is None or body.activity_index < 0 or body.activity_index >= len(acts):
+            raise HTTPException(status_code=400, detail="Invalid activity_index")
+        if not body.new_duration:
+            raise HTTPException(status_code=400, detail="new_duration required")
+        acts[body.activity_index]["duration"] = body.new_duration
+
+    elif body.action == "swap":
+        if body.activity_index is None or body.activity_index < 0 or body.activity_index >= len(acts):
+            raise HTTPException(status_code=400, detail="Invalid activity_index")
+        if body.alternative_index is None:
+            raise HTTPException(status_code=400, detail="alternative_index required")
+        act = acts[body.activity_index]
+        alternatives = act.get("nearby_alternatives", [])
+        if body.alternative_index < 0 or body.alternative_index >= len(alternatives):
+            raise HTTPException(status_code=400, detail="Invalid alternative_index")
+        alt = alternatives[body.alternative_index]
+        # Preserve time, replace everything else
+        time = act.get("time")
+        act.clear()
+        act.update(alt)
+        if time:
+            act["time"] = time
+
+    elif body.action == "skip":
+        if body.activity_index is None or body.activity_index < 0 or body.activity_index >= len(acts):
+            raise HTTPException(status_code=400, detail="Invalid activity_index")
+        day["activities"] = [a for j, a in enumerate(acts) if j != body.activity_index]
+
+    else:
+        raise HTTPException(status_code=400, detail=f"Unknown action: {body.action}")
+
+    # Re-process transit and schedule
+    inject_transit(day.get("activities", []))
+    optimize_day_schedule(day)
+
+    trip.itinerary = itinerary
+    db.commit()
+    db.refresh(trip)
     return trip
 
 

@@ -5,6 +5,15 @@ import "leaflet/dist/leaflet.css";
 import { trips, photos } from "../api";
 import { useToast } from "../components/Toast";
 
+function formatMinutes(m) {
+  if (m == null) return "";
+  const h = Math.floor(m / 60);
+  const mn = m % 60;
+  if (h > 0 && mn > 0) return `${h}h ${mn}m`;
+  if (h > 0) return `${h}h`;
+  return `${mn} min`;
+}
+
 function TripView() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -14,6 +23,8 @@ function TripView() {
   const [photoResults, setPhotoResults] = useState([]);
   const [photoLoading, setPhotoLoading] = useState(false);
   const [mapModal, setMapModal] = useState(null);
+  const [nearbyActivity, setNearbyActivity] = useState(null);
+  const [applying, setApplying] = useState(null);
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
   const userMarkerRef = useRef(null);
@@ -140,6 +151,19 @@ function TripView() {
     }
   };
 
+  const handleApply = async (dayIndex, patchBody) => {
+    setApplying(`${dayIndex}-${patchBody.action}`);
+    try {
+      const updated = await trips.patch(id, { day_index: dayIndex, ...patchBody });
+      setTrip(updated);
+      addToast("Schedule updated!", "success");
+    } catch {
+      addToast("Failed to apply change", "error");
+    } finally {
+      setApplying(null);
+    }
+  };
+
   const openPhotos = async (place) => {
     setPhotoModal(place);
     setPhotoResults([]);
@@ -212,58 +236,152 @@ function TripView() {
         {days.length === 0 ? (
           <p className="text-muted">No itinerary details available.</p>
         ) : (
-          days.map((day) => (
+          days.map((day, di) => (
             <div key={day.day} className="day-card">
               <div className="day-card-header">
                 <h3>
                   <span className="day-number">{day.day}</span>
                   Day {day.day}
                 </h3>
-                {day.date && <span className="day-date">{day.date}</span>}
+                <div className="day-time-summary">
+                  <span className="day-time-label">&#9200; {formatMinutes(day.time_used)}</span>
+                  {day.over_budget && <span className="day-time-warning">Over budget</span>}
+                </div>
               </div>
+              {day.date && <span className="day-date" style={{ display: "block", marginBottom: 12 }}>{day.date}</span>}
+
+              {day.over_budget && day.suggestions && day.suggestions.length > 0 && (
+                <div className="suggestion-banner">
+                  <div className="suggestion-banner-header">&#9200; Day needs {formatMinutes(day.time_used)} &mdash; over by {formatMinutes(day.time_used - day.time_budget)}</div>
+                  {day.suggestions.map((s, si) => (
+                    <div key={si} className="suggestion-item">
+                      <span className="suggestion-icon">&#128161;</span>
+                      <span className="suggestion-text">{s.label}</span>
+                      <button
+                        className="btn btn-sm btn-primary"
+                        onClick={() => handleApply(di, {
+                          action: s.type,
+                          activity_index: s.activity_index,
+                          alternative_index: s.alternative_index,
+                          new_duration: s.type === "shorten" ? s.to : undefined,
+                        })}
+                        disabled={applying === `${di}-${s.type}`}
+                      >
+                        {applying === `${di}-${s.type}` ? <span className="spinner spinner-sm" /> : "Apply"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {day.activities.map((act, i) => (
-                <div key={i} className="activity">
-                  <div className="activity-row">
-                    {act.time && <div className="activity-time">{act.time}</div>}
-                    <div className="activity-content">
-                      <div className="activity-name">
-                        {act.name}
-                        {act.category && (
-                          <span className={`activity-category ${getCategoryClass(act.category)}`}>
-                            {act.category}
-                          </span>
-                        )}
-                      </div>
-                      {act.description && <div className="activity-desc">{act.description}</div>}
-                      <div className="activity-footer">
-                        <div className="flex items-center gap-2">
-                          {act.cost && <div className="activity-cost">&#128176; {act.cost}</div>}
+                <div key={i}>
+                  <div className="activity">
+                    <div className="activity-row">
+                      {act.time && <div className="activity-time">{act.time}</div>}
+                      <div className="activity-content">
+                        <div className="activity-name">
+                          {act.name}
+                          {act.duration && <span className="activity-duration">&#9200; {act.duration}</span>}
+                          {act.category && (
+                            <span className={`activity-category ${getCategoryClass(act.category)}`}>
+                              {act.category}
+                            </span>
+                          )}
                         </div>
-                        <div className="flex items-center gap-2">
-                          {act.lat != null && act.lng != null && (
+                        {act.description && <div className="activity-desc">{act.description}</div>}
+                        <div className="activity-footer">
+                          <div className="flex items-center gap-2">
+                            {act.cost && <div className="activity-cost">&#128176; {act.cost}</div>}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {act.nearby_alternatives && act.nearby_alternatives.length > 0 && (
+                              <button
+                                className="btn btn-outline btn-sm btn-nearby"
+                                onClick={() => setNearbyActivity({ dayIndex: di, activityIndex: i, ...act })}
+                              >
+                                &#127758; Nearby
+                              </button>
+                            )}
+                            {act.lat != null && act.lng != null && (
+                              <button
+                                className="btn btn-outline btn-sm"
+                                onClick={() => setMapModal(act)}
+                              >
+                                &#128506; Map
+                              </button>
+                            )}
                             <button
                               className="btn btn-outline btn-sm"
-                              onClick={() => setMapModal(act)}
+                              onClick={() => openPhotos(act.name)}
                             >
-                              &#128506; Map
+                              &#128247; Photos
                             </button>
-                          )}
-                          <button
-                            className="btn btn-outline btn-sm"
-                            onClick={() => openPhotos(act.name)}
-                          >
-                            &#128247; Photos
-                          </button>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
+                  {act.next_transit && (
+                    <div className={`transit-indicator ${act.next_transit.mode}`}>
+                      <span className="transit-line" />
+                      <span className="transit-label">
+                        {act.next_transit.mode === "walk" ? "\u{1F6B6}" : "\u{1F697}"} {act.next_transit.minutes} min {act.next_transit.mode}
+                        {act.next_transit.distance_km != null && ` \u00B7 ${act.next_transit.distance_km} km`}
+                      </span>
+                      <span className="transit-line" />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
           ))
         )}
       </div>
+
+      {nearbyActivity && (
+        <div className="photo-modal-overlay" onClick={() => setNearbyActivity(null)}>
+          <div className="photo-modal nearby-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="photo-modal-header">
+              <h3>&#127758; Nearby Alternatives for "{nearbyActivity.name}"</h3>
+              <button className="photo-modal-close" onClick={() => setNearbyActivity(null)}>&times;</button>
+            </div>
+            <p className="form-hint" style={{ marginBottom: 16 }}>
+              {nearbyActivity.reason || "Quick alternatives nearby if you&apos;re short on time."}
+            </p>
+            <div className="nearby-grid">
+              {(nearbyActivity.nearby_alternatives || []).map((alt, ai) => (
+                <div key={ai} className="alternative-card">
+                  <div className="alternative-card-header">
+                    <strong>{alt.name}</strong>
+                    {alt.category && <span className={`activity-category ${getCategoryClass(alt.category)}`}>{alt.category}</span>}
+                  </div>
+                  <p className="alternative-desc">{alt.description}</p>
+                  <div className="alternative-meta">
+                    <span>&#9200; {alt.duration}</span>
+                    {alt.cost && <span>&#128176; {alt.cost}</span>}
+                  </div>
+                  {alt.reason && <p className="alternative-reason">&#128161; {alt.reason}</p>}
+                  <button
+                    className="btn btn-primary btn-sm"
+                    style={{ width: "100%", marginTop: 8 }}
+                    onClick={async () => {
+                      await handleApply(nearbyActivity.dayIndex, {
+                        action: "swap",
+                        activity_index: nearbyActivity.activityIndex,
+                        alternative_index: ai,
+                      });
+                      setNearbyActivity(null);
+                    }}
+                  >
+                    Use This Instead
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {photoModal && (
         <div className="photo-modal-overlay" onClick={() => setPhotoModal(null)}>

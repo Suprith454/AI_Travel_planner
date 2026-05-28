@@ -828,6 +828,155 @@ body {
   gap: 4px;
 }
 
+.activity-duration {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+  white-space: nowrap;
+}
+
+.transit-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0 6px 72px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.transit-line {
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.transit-label {
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.transit-indicator.walk .transit-label { color: #34d399; }
+.transit-indicator.drive .transit-label { color: #60a5fa; }
+
+.day-time-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.day-time-label {
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+}
+
+.day-time-warning {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+
+.suggestion-banner {
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.suggestion-banner-header {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fbbf24;
+  margin-bottom: 8px;
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.suggestion-icon {
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.suggestion-text {
+  flex: 1;
+  line-height: 1.4;
+}
+
+.btn-nearby {
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #6ee7b7;
+}
+
+.btn-nearby:hover {
+  border-color: rgba(16, 185, 129, 0.6);
+  background: rgba(16, 185, 129, 0.2);
+  color: #a7f3d0;
+}
+
+.nearby-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.alternative-card {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+}
+
+.alternative-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: #e2e8f0;
+}
+
+.alternative-desc {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.alternative-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.alternative-reason {
+  font-size: 12px;
+  color: #6ee7b7;
+  margin-top: 6px;
+  font-style: italic;
+}
+
+.nearby-modal {
+  max-width: 520px;
+}
+
 /* ============ MAP ============ */
 
 .map-container {

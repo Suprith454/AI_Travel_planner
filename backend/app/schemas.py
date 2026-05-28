@@ -23,6 +23,15 @@ class TripGenerate(BaseModel):
     travelers: Optional[str] = None
 
 
+class PatchAction(BaseModel):
+    action: str
+    day_index: int
+    activity_index: int | None = None
+    alternative_index: int | None = None
+    new_duration: str | None = None
+    new_order: list[int] | None = None
+
+
 class TripResponse(BaseModel):
     id: int
     title: str
