@@ -59,66 +59,6 @@ body {
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-/* ============ BACKGROUND SLIDESHOW ============ */
-
-.bg-slideshow {
-  position: relative;
-  min-height: calc(100vh - 64px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.bg-slideshow-images {
-  position: absolute;
-  inset: 0;
-}
-
-.bg-slide {
-  position: absolute;
-  inset: 0;
-  background-size: cover;
-  background-position: center;
-  transition: opacity 1s ease-in-out;
-}
-
-.bg-slide-current { opacity: 1; }
-.bg-slide-next { opacity: 0; }
-.bg-slide-visible { opacity: 1; }
-
-.bg-slideshow-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(10,10,10,0.95) 0%, rgba(10,10,10,0.8) 50%, rgba(10,10,10,0.85) 100%);
-  z-index: 1;
-}
-
-.bg-slideshow::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse at top right, rgba(16,185,129,0.08), transparent 60%),
-              radial-gradient(ellipse at bottom left, rgba(16,185,129,0.05), transparent 60%);
-  z-index: 2;
-  pointer-events: none;
-}
-
-.bg-slideshow-content {
-  position: relative;
-  z-index: 3;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-}
-
-.bg-slideshow-content-top {
-  align-items: flex-start;
-  justify-content: flex-start;
-}
-
 /* ============ NAVBAR ============ */
 
 .navbar {
@@ -633,6 +573,12 @@ body {
   transform: translateY(-1px);
 }
 
+.dashboard-quick-btn.selected {
+  border-color: var(--primary);
+  background: var(--primary-subtle);
+  box-shadow: 0 0 0 2px var(--primary-glow);
+}
+
 .dashboard-quick-btn span {
   font-size: 24px;
 }
@@ -953,62 +899,6 @@ body {
   font-weight: 400;
   color: var(--text-muted);
   margin-left: 4px;
-}
-
-/* ============ EXPENSE TIER CARDS ============ */
-
-.tier-card-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin: 16px 0;
-}
-
-.tier-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.tier-card:hover {
-  border-color: var(--primary);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow);
-}
-
-.tier-card.selected {
-  border-color: var(--primary);
-  background: var(--primary-subtle);
-  box-shadow: 0 0 0 2px var(--primary-glow);
-}
-
-.tier-card-icon {
-  font-size: 28px;
-  margin-bottom: 8px;
-}
-
-.tier-card-name {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text);
-  margin-bottom: 4px;
-}
-
-.tier-card-range {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--primary);
-  margin-bottom: 4px;
-}
-
-.tier-card-desc {
-  font-size: 12px;
-  color: var(--text-muted);
-  line-height: 1.4;
 }
 
 /* ============ TRIP VIEW ============ */
