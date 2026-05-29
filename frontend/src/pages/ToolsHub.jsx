@@ -17,7 +17,7 @@ function ToolsHub() {
       <button className="back-btn" onClick={() => navigate("/")}>&larr; Back</button>
       <div className="page-header">
         <div>
-          <h2>{'\u{1F9F0}'} Travel Tools</h2>
+          <h2>{'\u{1F9F0}'} Travel Kit</h2>
           <p className="text-muted">Packing lists, emergency info, and more</p>
         </div>
       </div>

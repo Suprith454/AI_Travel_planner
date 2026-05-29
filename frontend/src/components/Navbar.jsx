@@ -18,7 +18,7 @@ function Navbar() {
             <Link to="/" className={location.pathname === "/" ? "active" : ""}>My Trips</Link>
             <Link to="/plan" className={location.pathname === "/plan" ? "active" : ""}>Plan Trip</Link>
             <Link to="/getaways" className={location.pathname === "/getaways" ? "active" : ""}>Getaways</Link>
-            <Link to="/tools" className={location.pathname === "/tools" ? "active" : ""}>Tools</Link>
+            <Link to="/tools" className={location.pathname === "/tools" ? "active" : ""}>Travel Kit</Link>
             <div className="navbar-user">
               <span className="navbar-user-email">{user.name || user.email}</span>
               <span className="navbar-avatar">{(user.name || user.email)?.charAt(0).toUpperCase()}</span>
