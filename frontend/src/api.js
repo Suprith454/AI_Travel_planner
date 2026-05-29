@@ -24,13 +24,23 @@ export const trips = {
   get: (tripId) => request(`/trips/${tripId}`),
   patch: (tripId, body) => request(`/trips/${tripId}`, { method: "PATCH", body: JSON.stringify(body) }),
   delete: (tripId) => request(`/trips/${tripId}`, { method: "DELETE" }),
+  share: (tripId) => request(`/trips/${tripId}/share`, { method: "POST" }),
 };
 
 export const chat = {
-  plan: (message, userId) => request("/chat/plan", { method: "POST", body: JSON.stringify({ message, user_id: userId }) }),
+  plan: (message, userId, history = []) => request("/chat/plan", { method: "POST", body: JSON.stringify({ message, user_id: userId, history }) }),
   ask: (tripId, question, history) => request("/chat/ask", { method: "POST", body: JSON.stringify({ trip_id: tripId, question, history }) }),
 };
 
 export const photos = {
   search: (query) => request(`/photos?query=${encodeURIComponent(query)}`),
+};
+
+export const weather = {
+  get: (lat, lng, date) => request(`/weather?lat=${lat}&lng=${lng}${date ? `&date=${date}` : ""}`),
+};
+
+export const nearby = {
+  search: (lat, lng, radius = 500, category = "") =>
+    request(`/nearby?lat=${lat}&lng=${lng}&radius=${radius}${category ? `&category=${category}` : ""}`),
 };

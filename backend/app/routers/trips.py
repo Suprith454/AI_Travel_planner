@@ -3,10 +3,12 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import Trip
 from ..schemas import TripGenerate, TripResponse, PatchAction
+from ..utils import calculate_budget
 import json
 import os
 import math
 import re
+import secrets
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -374,7 +376,7 @@ def generate_trip(data: TripGenerate, user_id: int, db: Session = Depends(get_db
     db.add(trip)
     db.commit()
     db.refresh(trip)
-    return trip
+    return _trip_dict(trip)
 
 
 @router.get("/", response_model=list[TripResponse])
@@ -382,12 +384,29 @@ def list_trips(user_id: int, db: Session = Depends(get_db)):
     return db.query(Trip).filter(Trip.user_id == user_id).order_by(Trip.created_at.desc()).all()
 
 
-@router.get("/{trip_id}", response_model=TripResponse)
+def _trip_dict(trip):
+    d = {
+        "id": trip.id,
+        "title": trip.title,
+        "destination": trip.destination,
+        "start_date": trip.start_date,
+        "end_date": trip.end_date,
+        "budget": trip.budget,
+        "interests": trip.interests,
+        "itinerary": trip.itinerary,
+        "share_token": trip.share_token,
+        "created_at": trip.created_at.isoformat() if trip.created_at else None,
+        "budget_summary": calculate_budget(trip.itinerary),
+    }
+    return d
+
+
+@router.get("/{trip_id}")
 def get_trip(trip_id: int, db: Session = Depends(get_db)):
     trip = db.query(Trip).filter(Trip.id == trip_id).first()
     if not trip:
         raise HTTPException(status_code=404, detail="Trip not found")
-    return trip
+    return _trip_dict(trip)
 
 
 @router.patch("/{trip_id}")
@@ -420,7 +439,6 @@ def patch_trip(trip_id: int, body: PatchAction, db: Session = Depends(get_db)):
         if body.alternative_index < 0 or body.alternative_index >= len(alternatives):
             raise HTTPException(status_code=400, detail="Invalid alternative_index")
         alt = alternatives[body.alternative_index]
-        # Preserve time, replace everything else
         time = act.get("time")
         act.clear()
         act.update(alt)
@@ -435,14 +453,13 @@ def patch_trip(trip_id: int, body: PatchAction, db: Session = Depends(get_db)):
     else:
         raise HTTPException(status_code=400, detail=f"Unknown action: {body.action}")
 
-    # Re-process transit and schedule
     inject_transit(day.get("activities", []))
     optimize_day_schedule(day)
 
     trip.itinerary = itinerary
     db.commit()
     db.refresh(trip)
-    return trip
+    return _trip_dict(trip)
 
 
 @router.delete("/{trip_id}")
@@ -453,3 +470,23 @@ def delete_trip(trip_id: int, db: Session = Depends(get_db)):
     db.delete(trip)
     db.commit()
     return {"message": "Trip deleted"}
+
+
+@router.post("/{trip_id}/share")
+def generate_share_link(trip_id: int, db: Session = Depends(get_db)):
+    trip = db.query(Trip).filter(Trip.id == trip_id).first()
+    if not trip:
+        raise HTTPException(status_code=404, detail="Trip not found")
+    if not trip.share_token:
+        trip.share_token = secrets.token_urlsafe(16)
+        db.commit()
+        db.refresh(trip)
+    return {"share_token": trip.share_token}
+
+
+@router.get("/shared/{token}")
+def get_shared_trip(token: str, db: Session = Depends(get_db)):
+    trip = db.query(Trip).filter(Trip.share_token == token).first()
+    if not trip:
+        raise HTTPException(status_code=404, detail="Trip not found")
+    return _trip_dict(trip)

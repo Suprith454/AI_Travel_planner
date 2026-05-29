@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import inspect, text
 from .database import engine, Base
-from .routers import auth, trips, photos, chat
+from .routers import auth, trips, photos, chat, weather, nearby
 
 Base.metadata.create_all(bind=engine)
 
@@ -23,6 +23,14 @@ try:
                     'ALTER TABLE users ADD COLUMN "name" VARCHAR DEFAULT \'\'' if is_pg
                     else "ALTER TABLE users ADD COLUMN name VARCHAR DEFAULT ''"
                 ))
+            if "trips" in insp.get_table_names():
+                trip_cols = [c["name"] for c in insp.get_columns("trips")]
+                if "share_token" not in trip_cols:
+                    is_pg = "postgresql" in str(engine.url)
+                    conn.execute(text(
+                        'ALTER TABLE trips ADD COLUMN share_token VARCHAR UNIQUE' if is_pg
+                        else 'ALTER TABLE trips ADD COLUMN share_token VARCHAR UNIQUE'
+                    ))
             conn.commit()
 except Exception:
     pass
@@ -45,6 +53,8 @@ app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(trips.router, prefix="/api/trips", tags=["trips"])
 app.include_router(photos.router, prefix="/api", tags=["photos"])
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
+app.include_router(weather.router, prefix="/api", tags=["weather"])
+app.include_router(nearby.router, prefix="/api", tags=["nearby"])
 
 
 @app.get("/api/health")

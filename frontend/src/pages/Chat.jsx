@@ -5,10 +5,10 @@ import { chat } from "../api";
 import TripPreview from "../components/TripPreview";
 
 const EXAMPLES = [
-  "Plan a 5-day trip to Goa under ₹20,000 with adventure activities",
-  "Plan a 3-day trip to Paris for a couple, budget €1000, love food and art",
-  "Plan a week-long family trip to Bangkok with kids, budget-friendly",
-  "Plan a 2-day solo trip to Manali for ₹10,000, adventure and nature",
+  "Plan a trip to Goa",
+  "I want to visit Paris",
+  "Plan a 5-day trip to Manali under ₹20,000",
+  "What trips do I have?",
 ];
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -16,7 +16,7 @@ const supportsVoice = !!SpeechRecognition;
 
 function Chat() {
   const [messages, setMessages] = useState([
-    { role: "bot", text: "🌍 Where would you like to travel? Tell me your destination, how many days, your budget, and what you're interested in!" },
+    { role: "bot", text: "🌍 Where would you like to travel? Just tell me a destination and I'll help plan your trip!" },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -92,19 +92,21 @@ function Chat() {
     if (!msg || loading) return;
     if (listening) stopListening();
     setInput("");
+
+    const history = messages.map((m) => ({ role: m.role, text: m.text }));
     setMessages((prev) => [...prev, { role: "user", text: msg }]);
     setLoading(true);
 
     try {
-      const data = await chat.plan(msg, user.id);
+      const data = await chat.plan(msg, user.id, history);
       setMessages((prev) => [
         ...prev,
-        { role: "bot", text: data.reply, trip: data.trip },
+        { role: "bot", text: data.reply, trip: data.trip || null },
       ]);
     } catch {
       setMessages((prev) => [
         ...prev,
-        { role: "bot", text: "Sorry, I couldn't plan that trip. Try rephrasing or check your connection." },
+        { role: "bot", text: "Sorry, I couldn't process that. Please try again." },
       ]);
     } finally {
       setLoading(false);

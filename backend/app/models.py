@@ -26,4 +26,5 @@ class Trip(Base):
     budget = Column(String, nullable=True)
     interests = Column(Text, nullable=True)
     itinerary = Column(JSON, nullable=True)
+    share_token = Column(String, unique=True, nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

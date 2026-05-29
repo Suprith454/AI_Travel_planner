@@ -2,9 +2,13 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { trips, photos } from "../api";
+import { trips, photos, nearby } from "../api";
 import { useToast } from "../components/Toast";
 import AskAI from "../components/AskAI";
+import BudgetSummary from "../components/BudgetSummary";
+import WeatherPanel from "../components/WeatherPanel";
+import NearbyModal from "../components/NearbyModal";
+import { exportTripPdf } from "../utils/exportPdf";
 
 function TripView() {
   const { id } = useParams();
@@ -17,6 +21,12 @@ function TripView() {
   const [mapModal, setMapModal] = useState(null);
   const [nearbyActivity, setNearbyActivity] = useState(null);
   const [applying, setApplying] = useState(null);
+  const [shareModal, setShareModal] = useState(false);
+  const [shareLink, setShareLink] = useState("");
+  const [shareLoading, setShareLoading] = useState(false);
+  const [hotels, setHotels] = useState([]);
+  const [hotelsLoading, setHotelsLoading] = useState(false);
+  const [showHotels, setShowHotels] = useState(false);
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
   const userMarkerRef = useRef(null);
@@ -171,6 +181,48 @@ function TripView() {
     }
   };
 
+  const handleShare = async () => {
+    setShareLoading(true);
+    try {
+      const res = await trips.share(id);
+      const link = `${window.location.origin}/shared/${res.share_token}`;
+      setShareLink(link);
+      setShareModal(true);
+    } catch {
+      addToast("Failed to generate share link", "error");
+    } finally {
+      setShareLoading(false);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    try {
+      await exportTripPdf(trip);
+      addToast("PDF downloaded!", "success");
+    } catch {
+      addToast("Failed to generate PDF", "error");
+    }
+  };
+
+  const loadHotels = async () => {
+    if (hotels.length > 0) { setShowHotels(!showHotels); return; }
+    setHotelsLoading(true);
+    try {
+      const firstDay = days[0]?.activities?.[0];
+      if (!firstDay?.lat) {
+        addToast("No location data available", "error");
+        return;
+      }
+      const res = await nearby.search(firstDay.lat, firstDay.lng, 2000, "hotel");
+      setHotels(res.places || []);
+      setShowHotels(true);
+    } catch {
+      addToast("Failed to load hotels", "error");
+    } finally {
+      setHotelsLoading(false);
+    }
+  };
+
   const getCategoryClass = (cat) => {
     const c = (cat || "").toLowerCase();
     if (c.includes("food") || c.includes("restaurant") || c.includes("dining") || c.includes("meal")) return "food";
@@ -218,7 +270,61 @@ function TripView() {
             <span key={idx} className="trip-meta-badge interest">&#127775; {i.trim()}</span>
           ))}
         </div>
+        <div className="trip-actions">
+          <button className="btn btn-outline btn-sm" onClick={handleDownloadPdf}>&#128196; PDF</button>
+          <button className="btn btn-outline btn-sm" onClick={handleShare} disabled={shareLoading}>
+            {shareLoading ? <span className="spinner spinner-sm" /> : "\u{1F517}"} Share
+          </button>
+          <button className="btn btn-outline btn-sm" onClick={loadHotels}>
+            {hotelsLoading ? <span className="spinner spinner-sm" /> : "\u{1F3E8}"} Hotels
+          </button>
+        </div>
       </div>
+
+      <BudgetSummary trip={trip} />
+
+      {shareModal && (
+        <div className="photo-modal-overlay" onClick={() => setShareModal(false)}>
+          <div className="photo-modal" style={{ maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
+            <div className="photo-modal-header">
+              <h3>&#128279; Share Trip</h3>
+              <button className="photo-modal-close" onClick={() => setShareModal(false)}>&times;</button>
+            </div>
+            <p className="form-hint" style={{ marginBottom: 12 }}>Anyone with this link can view your trip (no login needed).</p>
+            <div className="share-link-row">
+              <input className="share-link-input" readOnly value={shareLink} onClick={(e) => e.target.select()} />
+              <button className="btn btn-primary btn-sm" onClick={() => { navigator.clipboard.writeText(shareLink); addToast("Link copied!", "success"); }}>
+                Copy
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showHotels && hotels.length > 0 && (
+        <div className="card">
+          <div className="card-header">
+            <h3>&#127968; Nearby Hotels</h3>
+            <button className="btn btn-outline btn-sm" onClick={() => setShowHotels(false)}>Close</button>
+          </div>
+          <div className="hotels-grid">
+            {hotels.map((h, i) => (
+              <div key={i} className="hotel-card">
+                <div className="hotel-card-name">{h.name}</div>
+                <div className="hotel-card-meta">
+                  <span>&#128205; {h.distance_m}m away</span>
+                  {h.category && <span className={`activity-category ${h.category === "hotel" ? "sightseeing" : getCategoryClass(h.category)}`}>{h.category}</span>}
+                </div>
+                {h.lat && h.lng && (
+                  <button className="btn btn-outline btn-sm" style={{ marginTop: 8 }} onClick={() => setMapModal(h)}>
+                    &#128506; View on Map
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="card">
         <div className="card-header">
@@ -235,6 +341,11 @@ function TripView() {
                   <span className="day-number">{day.day}</span>
                   Day {day.day}
                 </h3>
+                <WeatherPanel
+                  lat={day.activities?.[0]?.lat}
+                  lng={day.activities?.[0]?.lng}
+                  dayLabel={`Day ${day.day}`}
+                />
               </div>
               {day.date && <span className="day-date" style={{ display: "block", marginBottom: 12 }}>{day.date}</span>}
 
@@ -304,47 +415,12 @@ function TripView() {
       </div>
 
       {nearbyActivity && (
-        <div className="photo-modal-overlay" onClick={() => setNearbyActivity(null)}>
-          <div className="photo-modal nearby-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="photo-modal-header">
-              <h3>&#127758; Nearby Alternatives for "{nearbyActivity.name}"</h3>
-              <button className="photo-modal-close" onClick={() => setNearbyActivity(null)}>&times;</button>
-            </div>
-            <p className="form-hint" style={{ marginBottom: 16 }}>
-              {nearbyActivity.reason || "Quick alternatives nearby if you&apos;re short on time."}
-            </p>
-            <div className="nearby-grid">
-              {(nearbyActivity.nearby_alternatives || []).map((alt, ai) => (
-                <div key={ai} className="alternative-card">
-                  <div className="alternative-card-header">
-                    <strong>{alt.name}</strong>
-                    {alt.category && <span className={`activity-category ${getCategoryClass(alt.category)}`}>{alt.category}</span>}
-                  </div>
-                  <p className="alternative-desc">{alt.description}</p>
-                  <div className="alternative-meta">
-                    <span>&#9200; {alt.duration}</span>
-                    {alt.cost && <span>&#128176; {alt.cost}</span>}
-                  </div>
-                  {alt.reason && <p className="alternative-reason">&#128161; {alt.reason}</p>}
-                  <button
-                    className="btn btn-primary btn-sm"
-                    style={{ width: "100%", marginTop: 8 }}
-                    onClick={async () => {
-                      await handleApply(nearbyActivity.dayIndex, {
-                        action: "swap",
-                        activity_index: nearbyActivity.activityIndex,
-                        alternative_index: ai,
-                      });
-                      setNearbyActivity(null);
-                    }}
-                  >
-                    Use This Instead
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        <NearbyModal
+          activity={nearbyActivity}
+          dayIndex={nearbyActivity.dayIndex}
+          onClose={() => setNearbyActivity(null)}
+          onSwap={handleApply}
+        />
       )}
 
       {photoModal && (

@@ -612,6 +612,139 @@ body {
   margin-top: 12px;
 }
 
+/* ============ BUDGET SUMMARY ============ */
+
+.budget-summary {
+  margin-bottom: 20px;
+}
+
+.budget-summary.budget-over {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.budget-summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.budget-summary-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.budget-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.1);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+}
+
+.budget-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.budget-total-label {
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.budget-total-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.budget-total-value.text-danger {
+  color: var(--danger);
+}
+
+.budget-bar-track {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.budget-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.budget-bar-fill.budget-bar-warn {
+  background: var(--warning);
+}
+
+.budget-bar-fill.budget-bar-over {
+  background: var(--danger);
+}
+
+.budget-bar-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+}
+
+.text-success {
+  color: #34d399;
+}
+
+.text-danger {
+  color: var(--danger);
+}
+
+.budget-days {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.budget-day-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.budget-day-row:last-child {
+  border-bottom: none;
+}
+
+.budget-day-label {
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.budget-day-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.budget-day-count {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
 .trip-card-delete {
   position: absolute;
   top: 16px;
@@ -721,6 +854,34 @@ body {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
+  gap: 12px;
+}
+
+.weather-strip {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.weather-chip {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 2px 6px;
+  font-size: 11px;
+  cursor: default;
+}
+
+.weather-icon {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.weather-temp {
+  font-weight: 600;
+  color: var(--text-secondary);
 }
 
 .day-card-header h3 {
@@ -926,6 +1087,68 @@ body {
 
 .nearby-modal {
   max-width: 520px;
+}
+
+.nearby-live-search {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nearby-live-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.nearby-category-select {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #e2e8f0;
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+}
+
+.nearby-category-select:focus {
+  border-color: var(--primary);
+}
+
+.nearby-divider {
+  text-align: center;
+  padding: 8px 0;
+  margin: 4px 0;
+}
+
+.nearby-divider span {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.nearby-badge-ai {
+  font-size: 10px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+}
+
+.nearby-badge-live {
+  font-size: 10px;
+  font-weight: 700;
+  background: #ef4444;
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
 }
 
 /* ============ MAP ============ */
@@ -1886,4 +2109,86 @@ body {
     height: 48px;
     font-size: 20px;
   }
+}
+
+/* ============ TRIP ACTIONS ============ */
+
+.trip-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+/* ============ SHARE LINK ============ */
+
+.share-link-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.share-link-input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  background: var(--surface);
+  color: var(--text);
+  outline: none;
+  cursor: text;
+}
+
+.share-link-input:focus {
+  border-color: var(--primary);
+}
+
+/* ============ HOTELS ============ */
+
+.hotels-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+  padding: 12px 16px 16px;
+}
+
+.hotel-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  transition: box-shadow 0.2s;
+}
+
+.hotel-card:hover {
+  box-shadow: var(--shadow-sm);
+}
+
+.hotel-card-name {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 6px;
+  color: var(--text);
+}
+
+.hotel-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* ============ SHARED BANNER ============ */
+
+.shared-banner {
+  background: var(--primary-gradient);
+  color: #fff;
+  text-align: center;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: var(--radius);
+  margin-bottom: 16px;
 }

@@ -33,6 +33,19 @@ class PatchAction(BaseModel):
 
 
 
+class DailyCost(BaseModel):
+    day: int
+    date: str
+    cost: float
+    activities_count: int
+
+
+class BudgetSummary(BaseModel):
+    total_cost: float
+    currency: str
+    daily_costs: list[DailyCost]
+
+
 class TripResponse(BaseModel):
     id: int
     title: str
@@ -43,5 +56,6 @@ class TripResponse(BaseModel):
     interests: Optional[str]
     itinerary: Optional[dict]
     created_at: datetime
+    budget_summary: Optional[BudgetSummary] = None
 
     model_config = {"from_attributes": True}
