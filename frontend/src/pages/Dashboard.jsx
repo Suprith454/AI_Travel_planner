@@ -50,7 +50,7 @@ function Dashboard() {
     return (
       <div className="main-content">
         <div className="skeleton skeleton-text-lg" style={{ marginBottom: 8 }} />
-        <div className="skeleton skeleton-text-sm" />
+        <div className="skeleton skeleton-text-sm" style={{ marginTop: 4 }} />
         <div className="skeleton-grid" style={{ marginTop: 24 }}>
           {[1, 2, 3].map((i) => (
             <div key={i} className="skeleton skeleton-card" />
