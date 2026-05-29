@@ -212,20 +212,29 @@ function PlanTrip() {
       </motion.div>
 
       <div className="plan-tabs">
-        <button className={`plan-tab ${tab === "form" ? "active" : ""}`} onClick={() => setTab("form")}>{'\u{1F4CB}'} Quick Form</button>
+        <button className={`plan-tab ${tab === "form" ? "active" : ""}`} onClick={() => setTab("form")}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          Quick Form
+        </button>
         <button className={`plan-tab ${tab === "chat" ? "active" : ""}`} onClick={() => setTab("chat")}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 4 }}><path d="M12 2a4 4 0 0 1 4 4v2a4 4 0 0 1-8 0V6a4 4 0 0 1 4-4z"/><path d="M2 18v2a4 4 0 0 0 4 4h12a4 4 0 0 0 4-4v-2"/><path d="M6 14h.01M18 14h.01M10 18h4"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="12" y1="8" x2="12" y2="14"/><line x1="9" y1="11" x2="15" y2="11"/></svg>
           AI Chat
         </button>
       </div>
 
       {tab === "form" && (
-        <div className="card">
-          <div className="card-header"><h3>Trip Details</h3></div>
-          <form onSubmit={handleFormSubmit}>
+        <div className="plan-form-card">
+          <div className="plan-form-header">
+            <div className="plan-form-icon">{'\u{1F9D1}\u200D\u{1F4BB}'}</div>
+            <div>
+              <div className="plan-form-title">Plan Your Trip</div>
+              <div className="plan-form-subtitle">Fill in the details and let AI create your perfect itinerary</div>
+            </div>
+          </div>
+          <form onSubmit={handleFormSubmit} className="plan-form-dividers">
             <div className="form-group">
-              <label>Destination *</label>
-              <input name="destination" value={form.destination} onChange={handleChange} placeholder="e.g., Paris, France" required />
+              <label>Destination</label>
+              <input name="destination" value={form.destination} onChange={handleChange} placeholder="e.g., Paris, France, Tokyo, Goa..." required />
             </div>
             <div className="form-row">
               <div className="form-group">
@@ -250,18 +259,21 @@ function PlanTrip() {
             <div className="form-group">
               <label>Interests</label>
               <textarea name="interests" value={form.interests} onChange={handleChange} placeholder="e.g., food, history, adventure, nature, museums, shopping" rows={2} />
-              <p className="form-hint">Optional — separate with commas. Our AI will suggest activities either way.</p>
+              <p className="form-hint">Optional — separate with commas. Our AI will tailor activities to your preferences.</p>
             </div>
             {formError && <p className="form-error">{formError}</p>}
-            <button type="submit" className="btn btn-primary" disabled={formLoading || !form.destination.trim()} style={{ width: "100%", marginTop: 8 }}>
-              {formLoading ? <span style={{ display: "flex", alignItems: "center", gap: 8 }}><span className="spinner spinner-sm" /> Generating with AI...</span> : "Generate Itinerary"}
+            <button type="submit" className="plan-form-btn" disabled={formLoading || !form.destination.trim()}>
+              {formLoading ? <><span className="spinner spinner-sm" /> Generating with AI...</> : <>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                Generate Itinerary
+              </>}
             </button>
           </form>
         </div>
       )}
 
       {tab === "chat" && (
-        <div className="card chat-embedded-card">
+        <div className="chat-embedded-card">
           <div className="chat-embedded-messages">
             {messages.map((msg, i) => (
               <motion.div key={i} className={`chat-msg ${msg.role}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
@@ -309,10 +321,12 @@ function PlanTrip() {
         </div>
       )}
 
-      <div className="card plan-budget-section">
+      <div className="plan-budget-section">
         <button className="plan-budget-toggle" onClick={() => setShowBudget(!showBudget)}>
           <span>{'\u{1F4CA}'} Budget Analyzer</span>
-          <span>{showBudget ? "\u25B2" : "\u25BC"}</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ transform: showBudget ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
         </button>
         {showBudget && (
           <div className="plan-budget-content">
