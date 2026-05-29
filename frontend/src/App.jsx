@@ -29,7 +29,7 @@ const pageVariants = {
 
 function AnimatedPage({ children }) {
   return (
-    <motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit">
+    <motion.div variants={pageVariants} initial={false} animate="animate" exit="exit">
       {children}
     </motion.div>
   );
