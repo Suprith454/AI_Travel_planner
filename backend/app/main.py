@@ -26,11 +26,8 @@ try:
             if "trips" in insp.get_table_names():
                 trip_cols = [c["name"] for c in insp.get_columns("trips")]
                 if "share_token" not in trip_cols:
-                    is_pg = "postgresql" in str(engine.url)
-                    conn.execute(text(
-                        'ALTER TABLE trips ADD COLUMN share_token VARCHAR UNIQUE' if is_pg
-                        else 'ALTER TABLE trips ADD COLUMN share_token VARCHAR UNIQUE'
-                    ))
+                    conn.execute(text('ALTER TABLE trips ADD COLUMN share_token VARCHAR'))
+                    conn.execute(text('CREATE UNIQUE INDEX IF NOT EXISTS ix_trips_share_token ON trips (share_token)'))
             conn.commit()
 except Exception:
     pass
