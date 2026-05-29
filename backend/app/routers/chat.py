@@ -47,8 +47,9 @@ def build_system_prompt(user_name: str, trips_context: str) -> str:
         "Never answer questions unrelated to travel, trip planning, or this app. "
         "Politely redirect off-topic questions back to travel planning.\n\n"
         "RULES:\n"
-        "1. When a user wants to plan a trip, you MUST have the DESTINATION and NUMBER OF DAYS before creating it. "
-        "If either is missing, ask a clarifying question.\n"
+        "1. When a user wants to plan a trip, you MUST have the DESTINATION, NUMBER OF DAYS, "
+        "and DATES (start_date and end_date in YYYY-MM-DD format) before creating it. "
+        "If any are missing, ask a clarifying question.\n"
         "2. Budget is optional. If the user does NOT specify a budget, suggest 3 budget tiers: "
         "Budget ($50-100/day), Mid ($150-250/day), Luxury ($350-500/day). "
         "Ask which tier they prefer, or estimate a reasonable budget for the destination.\n"
@@ -66,7 +67,7 @@ def build_system_prompt(user_name: str, trips_context: str) -> str:
         "'off_topic' (not travel related)\n"
         "- reply: your conversational response to the user\n\n"
         "When type is 'plan_ready', include these extra fields:\n"
-        '"params": {"destination": "...", "duration_days": 5, "budget": "...", '
+        '"params": {"destination": "...", "duration_days": 5, "start_date": "2026-06-01", "end_date": "2026-06-05", "budget": "...", '
         '"interests": "...", "travelers": 1}\n\n'
         f"USER NAME: {user_name}\n"
         f"USER'S EXISTING TRIPS:\n{trips_context}\n\n"
@@ -121,8 +122,11 @@ def build_trip_reply(params: dict) -> str:
     days = params.get("duration_days", 3)
     budget = params.get("budget", "Not specified")
     interests = params.get("interests", "General")
+    sd = params.get("start_date")
+    ed = params.get("end_date")
+    date_str = f" ({sd} to {ed})" if sd and ed else ""
     lines = [
-        f"Your **{days}-day trip to {dest}** is ready! 🎉",
+        f"Your **{days}-day trip to {dest}**{date_str} is ready! 🎉",
         "",
         f"**Budget:** {budget}",
         f"**Interests:** {interests}",
@@ -171,6 +175,8 @@ def chat_plan(data: ChatPlanRequest, db: Session = Depends(get_db)):
         budget = params.get("budget", "Not specified")
         interests = params.get("interests", "General")
         travelers = params.get("travelers", 1)
+        start_date = params.get("start_date")
+        end_date = params.get("end_date")
 
         itinerary_dict = generate_itinerary(destination, duration_days, budget, interests, travelers)
         itinerary_dict = post_process_itinerary(itinerary_dict)
@@ -183,8 +189,8 @@ def chat_plan(data: ChatPlanRequest, db: Session = Depends(get_db)):
             budget=budget,
             interests=interests,
             itinerary=itinerary_dict,
-            start_date=None,
-            end_date=None,
+            start_date=start_date,
+            end_date=end_date,
         )
         db.add(trip)
         db.commit()
@@ -201,6 +207,8 @@ def chat_plan(data: ChatPlanRequest, db: Session = Depends(get_db)):
                 "budget": trip.budget,
                 "interests": trip.interests,
                 "itinerary": trip.itinerary,
+                "start_date": trip.start_date,
+                "end_date": trip.end_date,
                 "created_at": trip.created_at.isoformat() if trip.created_at else None,
                 "budget_summary": budget_summary,
             },
@@ -213,14 +221,20 @@ def mock_chat_response(message: str, user_id: int, db: Session) -> dict:
     message_lower = message.lower()
     dest_match = __import__("re").search(r"(?:to|in|for)\s+([A-Za-z\s]{2,}?)(?:\s+(?:for|with|under|\d)|\.|$)", message_lower)
     days_match = __import__("re").search(r"(\d+)\s*-?\s*day", message_lower)
+    date_match = __import__("re").search(r"(\d{4}-\d{2}-\d{2})", message)
     destination = dest_match.group(1).strip().title() if dest_match else ""
     duration_days = int(days_match.group(1)) if days_match else 0
+    start_date = date_match.group(1) if date_match else None
+    end_date = None
 
     if not destination:
         return {"reply": "Where would you like to travel? Tell me the destination!", "trip": None}
 
     if duration_days <= 0:
-        return {"reply": f"**{destination}** sounds great! How many days are you planning to stay?", "trip": None}
+        return {"reply": f"**{destination}** sounds great! How many days are you planning to stay? Also, what dates are you thinking?", "trip": None}
+
+    if not start_date:
+        return {"reply": f"What dates will you be visiting **{destination}**? (e.g. 2026-06-01)", "trip": None}
 
     budget = "Not specified"
     budget_match = __import__("re").search(r"(?:under|budget of|for)\s*(₹?\s*[\d,]+)", message_lower)
@@ -232,6 +246,12 @@ def mock_chat_response(message: str, user_id: int, db: Session) -> dict:
     if interests_match:
         interests = interests_match.group(1).strip().title()
 
+    if start_date and duration_days:
+        from datetime import datetime, timedelta
+        sd = datetime.strptime(start_date, "%Y-%m-%d")
+        ed = sd + timedelta(days=duration_days - 1)
+        end_date = ed.strftime("%Y-%m-%d")
+
     itinerary_dict = build_mock_itinerary(destination)
     itinerary_dict = post_process_itinerary(itinerary_dict)
 
@@ -242,15 +262,16 @@ def mock_chat_response(message: str, user_id: int, db: Session) -> dict:
         budget=budget,
         interests=interests,
         itinerary=itinerary_dict,
-        start_date=None,
-        end_date=None,
+        start_date=start_date,
+        end_date=end_date,
     )
     db.add(trip)
     db.commit()
     db.refresh(trip)
 
+    date_str = f" ({start_date} to {end_date})" if start_date and end_date else ""
     reply = (
-        f"Your **{duration_days}-day trip to {destination}** is ready! 🎉\n\n"
+        f"Your **{duration_days}-day trip to {destination}**{date_str} is ready! 🎉\n\n"
         f"**Budget:** {budget}\n"
         f"**Interests:** {interests}\n\n"
         "Click the card below to explore your full day-by-day itinerary! 👇"
@@ -265,6 +286,8 @@ def mock_chat_response(message: str, user_id: int, db: Session) -> dict:
             "budget": trip.budget,
             "interests": trip.interests,
             "itinerary": trip.itinerary,
+            "start_date": trip.start_date,
+            "end_date": trip.end_date,
             "created_at": trip.created_at.isoformat() if trip.created_at else None,
             "budget_summary": budget_summary,
         },

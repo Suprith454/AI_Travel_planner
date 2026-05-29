@@ -46,25 +46,6 @@ function Dashboard() {
     setDeleteTarget(tripId);
   };
 
-  const handleDuplicate = async (e, tripId) => {
-    e.stopPropagation();
-    try {
-      const duped = await trips.duplicate(tripId);
-      addToast("Trip duplicated!", "success");
-      setTripList((prev) => [duped, ...prev]);
-    } catch {
-      addToast("Failed to duplicate trip", "error");
-    }
-  };
-
-  const today = new Date();
-  const upcoming = tripList.filter((t) => t.start_date && new Date(t.start_date) >= today);
-  const totalBudget = tripList.reduce((sum, t) => {
-    const num = t.budget ? parseFloat(t.budget.replace(/[^0-9.]/g, "")) : 0;
-    return sum + (isNaN(num) ? 0 : num);
-  }, 0);
-  const destinations = new Set(tripList.map((t) => t.destination?.toLowerCase())).size;
-
   if (loading) {
     return (
       <div className="main-content">
@@ -91,32 +72,6 @@ function Dashboard() {
           <button className="btn btn-primary" onClick={() => navigate("/plan")}>+ New Trip</button>
         </div>
       </div>
-
-      {tripList.length > 0 && (
-        <motion.div
-          className="dashboard-stats"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <div className="stat-card">
-            <div className="stat-card-label">Total Trips</div>
-            <div className="stat-card-value primary">{tripList.length}</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-card-label">Upcoming</div>
-            <div className="stat-card-value info">{upcoming.length}</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-card-label">Budget Planned</div>
-            <div className="stat-card-value warning">${totalBudget.toLocaleString()}</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-card-label">Destinations</div>
-            <div className="stat-card-value">{destinations}</div>
-          </div>
-        </motion.div>
-      )}
 
       {tripList.length === 0 ? (
         <motion.div
@@ -163,9 +118,6 @@ function Dashboard() {
                   ))}
                 </div>
               )}
-              <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
-                <button className="btn btn-outline btn-sm" onClick={(e) => handleDuplicate(e, trip.id)} style={{ fontSize: 12 }}>Duplicate</button>
-              </div>
             </motion.div>
           ))}
         </div>
