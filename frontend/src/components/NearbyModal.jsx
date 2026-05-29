@@ -62,8 +62,8 @@ function NearbyModal({ activity, dayIndex, onClose, onSwap }) {
               onClick={searchLive}
               disabled={liveLoading || activity.lat == null}
             >
-              {liveLoading ? <span className="spinner spinner-sm" /> : "&#128270;"}
-              Search Live
+              {liveLoading ? <span className="spinner spinner-sm" /> : null}
+              Search
             </button>
           </div>
           {liveError && <p className="form-error">{liveError}</p>}
