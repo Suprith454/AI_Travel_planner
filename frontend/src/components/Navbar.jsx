@@ -16,9 +16,7 @@ function Navbar() {
         {user ? (
           <>
             <Link to="/" className={location.pathname === "/" ? "active" : ""}>My Trips</Link>
-            <Link to="/chat" className={location.pathname === "/chat" ? "active" : ""}>AI Chat</Link>
             <Link to="/plan" className={location.pathname === "/plan" ? "active" : ""}>Plan Trip</Link>
-            <Link to="/budget" className={location.pathname === "/budget" ? "active" : ""}>Budget</Link>
             <Link to="/getaways" className={location.pathname === "/getaways" ? "active" : ""}>Getaways</Link>
             <Link to="/tools" className={location.pathname === "/tools" ? "active" : ""}>Tools</Link>
             <div className="navbar-user">

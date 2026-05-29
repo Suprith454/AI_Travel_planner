@@ -68,7 +68,7 @@ function Dashboard() {
           <p className="text-muted">{tripList.length} trip{tripList.length !== 1 ? "s" : ""} planned</p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="btn btn-outline" onClick={() => navigate("/chat")}>AI Chat</button>
+          <button className="btn btn-outline" onClick={() => navigate("/plan")}>AI Chat</button>
           <button className="btn btn-primary" onClick={() => navigate("/plan")}>+ New Trip</button>
         </div>
       </div>
@@ -85,7 +85,7 @@ function Dashboard() {
           <p>Plan your first adventure to get started.</p>
           <div className="flex" style={{ gap: 10, justifyContent: "center" }}>
             <button className="btn btn-primary" onClick={() => navigate("/plan")}>Plan a Trip</button>
-            <button className="btn btn-outline" onClick={() => navigate("/chat")}>AI Chat</button>
+            <button className="btn btn-outline" onClick={() => navigate("/plan")}>AI Chat</button>
           </div>
         </motion.div>
       ) : (
