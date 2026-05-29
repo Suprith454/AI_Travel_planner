@@ -4,6 +4,7 @@ from typing import Optional
 import math
 import httpx
 import json
+from ..utils import get_currency_for_destination
 
 router = APIRouter()
 
@@ -82,11 +83,14 @@ def analyze_budget(
         "activities": {"daily": costs["activities"], "total": round(costs["activities"] * days * travelers, 2)},
     }
 
+    currency = get_currency_for_destination(destination)
+
     result = {
         "destination": destination,
         "days": days,
         "travelers": travelers,
         "tier": tier,
+        "currency": currency,
         "per_person_daily": round(per_person_daily, 2),
         "total_per_person": round(total_per_person, 2),
         "total_trip_cost": round(total_trip, 2),
@@ -121,6 +125,7 @@ def multi_tier_budget(
     travelers: int = Query(1, ge=1),
 ):
     data = _get_cost_data(destination)
+    currency = get_currency_for_destination(destination)
     tiers = {}
     for tier_name in ["budget", "mid", "luxury"]:
         costs = _tier_pick(data, tier_name)
@@ -135,7 +140,7 @@ def multi_tier_budget(
                 "activities": round(costs["activities"] * days * travelers, 2),
             },
         }
-    return {"destination": destination, "days": days, "travelers": travelers, "tiers": tiers}
+    return {"destination": destination, "days": days, "travelers": travelers, "currency": currency, "tiers": tiers}
 
 
 # ============ WEEKEND GETAWAY GENERATOR ============

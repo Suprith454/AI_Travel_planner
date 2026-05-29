@@ -7,7 +7,7 @@ from ..routers.trips import (
     build_mock_itinerary, post_process_itinerary,
     parse_duration_minutes,
 )
-from ..utils import calculate_budget
+from ..utils import calculate_budget, get_currency_for_destination
 import json
 import os
 from dotenv import load_dotenv
@@ -88,12 +88,14 @@ def _get_budget_tier_guide(budget: str) -> str:
 
 def generate_itinerary(destination: str, duration_days: int, budget: str, interests: str, travelers: int) -> dict:
     budget_guide = _get_budget_tier_guide(budget)
+    currency_hint = get_currency_for_destination(destination)
     if not USE_MOCK and groq_client:
         prompt = (
             f"Plan a {duration_days}-day trip to {destination}. "
             f"Budget: {budget} ({budget_guide}). "
             f"Interests: {interests}. "
             f"Number of travelers: {travelers}. "
+            f"Use local currency symbol {currency_hint} for all costs (e.g., {currency_hint}25 instead of $25). "
             "Provide a day-by-day itinerary with specific places, activities, "
             "approximate costs, and coordinates (lat/lng) for each place. "
             "Include for each activity: a start time (time), duration (duration), "

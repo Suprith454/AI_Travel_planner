@@ -399,7 +399,7 @@ function PlanTrip() {
                       <div key={cat} className="analyzer-breakdown-row" style={{ marginBottom: 10 }}>
                         <div className="analyzer-breakdown-header">
                           <span className="analyzer-breakdown-name" style={{ textTransform: "capitalize" }}>{cat}</span>
-                          <span className="analyzer-breakdown-cost">${data.daily}/day &middot; ${data.total} total</span>
+                          <span className="analyzer-breakdown-cost">{analysis.currency}{data.daily}/day &middot; {analysis.currency}{data.total} total</span>
                         </div>
                         <div className="budget-bar-track" style={{ height: 6 }}><div className="budget-bar-fill" style={{ width: `${pct}%` }} /></div>
                       </div>
@@ -416,8 +416,8 @@ function PlanTrip() {
                           <span className="multi-tier-icon">{TIERS.find((t) => t.value === tier)?.icon}</span>
                           <span className="multi-tier-label" style={{ textTransform: "capitalize" }}>{tier}</span>
                         </div>
-                        <div className="multi-tier-total">${data.total_cost}</div>
-                        <div className="multi-tier-daily">${data.daily_per_person}/day</div>
+                        <div className="multi-tier-total">{multiTier.currency}{data.total_cost}</div>
+                        <div className="multi-tier-daily">{multiTier.currency}{data.daily_per_person}/day</div>
                       </div>
                     ))}
                   </div>

@@ -22,11 +22,63 @@ def parse_cost(cost_str: str) -> float:
 def detect_currency(cost_str: str) -> str:
     if not cost_str:
         return ""
-    symbols = {"$": "$", "€": "€", "£": "£", "¥": "¥", "₹": "₹", "₩": "₩"}
+    symbols = {"$": "$", "€": "€", "£": "£", "¥": "¥", "₹": "₹", "₩": "₩", "₱": "₱", "₴": "₴", "₪": "₪", "د.إ": "د.إ", "R": "R", "₫": "₫"}
     for sym, code in symbols.items():
         if sym in cost_str:
             return sym
     return ""
+
+
+DESTINATION_CURRENCY = {
+    "india": "₹", "goa": "₹", "manali": "₹", "mumbai": "₹", "delhi": "₹", "bangalore": "₹", "bengaluru": "₹",
+    "chennai": "₹", "kerala": "₹", "jaipur": "₹", "varanasi": "₹", "rishikesh": "₹", "agra": "₹", "udaipur": "₹",
+    "japan": "¥", "tokyo": "¥", "kyoto": "¥", "osaka": "¥", "hokkaido": "¥",
+    "china": "¥", "beijing": "¥", "shanghai": "¥", "hong kong": "HK$", "macau": "MOP$",
+    "south korea": "₩", "seoul": "₩", "busan": "₩",
+    "vietnam": "₫", "hanoi": "₫", "ho chi minh": "₫", "saigon": "₫",
+    "thailand": "฿", "bangkok": "฿", "phuket": "฿", "chiang mai": "฿",
+    "singapore": "S$",
+    "indonesia": "Rp", "bali": "Rp", "jakarta": "Rp",
+    "malaysia": "RM", "kuala lumpur": "RM",
+    "nepal": "₨", "kathmandu": "₨", "pokhara": "₨",
+    "sri lanka": "₨",
+    "philippines": "₱", "manila": "₱", "cebu": "₱",
+    "uae": "د.إ", "dubai": "د.إ", "abu dhabi": "د.إ",
+    "turkey": "₺", "istanbul": "₺", "antalya": "₺",
+    "uk": "£", "london": "£", "manchester": "£", "england": "£", "britain": "£",
+    "europe": "€", "france": "€", "paris": "€", "italy": "€", "rome": "€", "milan": "€", "venice": "€",
+    "spain": "€", "barcelona": "€", "madrid": "€", "germany": "€", "berlin": "€", "munich": "€",
+    "netherlands": "€", "amsterdam": "€", "belgium": "€", "brussels": "€",
+    "switzerland": "CHF", "zurich": "CHF", "geneva": "CHF",
+    "sweden": "kr", "stockholm": "kr",
+    "norway": "kr", "oslo": "kr",
+    "denmark": "kr", "copenhagen": "kr",
+    "australia": "A$", "sydney": "A$", "melbourne": "A$",
+    "new zealand": "NZ$", "auckland": "NZ$",
+    "usa": "$", "united states": "$", "new york": "$", "san francisco": "$", "chicago": "$",
+    "los angeles": "$", "las vegas": "$", "miami": "$", "boston": "$",
+    "canada": "C$", "toronto": "C$", "vancouver": "C$", "montreal": "C$",
+    "mexico": "Mex$", "mexico city": "Mex$", "cancun": "Mex$",
+    "brazil": "R$", "rio de janeiro": "R$", "sao paulo": "R$",
+    "argentina": "AR$", "buenos aires": "AR$",
+    "south africa": "R", "cape town": "R", "johannesburg": "R",
+    "egypt": "E£", "cairo": "E£",
+    "morocco": "MAD", "marrakech": "MAD",
+    "kenya": "KSh", "nairobi": "KSh",
+    "israel": "₪", "tel aviv": "₪", "jerusalem": "₪",
+    "russia": "₽", "moscow": "₽", "st petersburg": "₽",
+    "ukraine": "₴", "kyiv": "₴",
+}
+
+
+def get_currency_for_destination(destination: str) -> str:
+    if not destination:
+        return "$"
+    dest_lower = destination.lower().strip()
+    for key, sym in DESTINATION_CURRENCY.items():
+        if key in dest_lower or dest_lower in key:
+            return sym
+    return "$"
 
 
 CATEGORY_MAP = {
@@ -78,7 +130,7 @@ def categorize_cost(category: str) -> str:
     return "Other"
 
 
-def calculate_budget(itinerary: dict) -> dict:
+def calculate_budget(itinerary: dict, destination: str = "") -> dict:
     days = itinerary.get("days", []) if itinerary else []
     daily_costs = []
     total_cost = 0.0
@@ -102,6 +154,9 @@ def calculate_budget(itinerary: dict) -> dict:
             "activities_count": len(day.get("activities", [])),
         })
         total_cost += day_cost
+
+    if not currency and destination:
+        currency = get_currency_for_destination(destination)
 
     category_breakdown = [
         {"category": "Accommodation", "cost": round(category_totals.get("Accommodation", 0), 2)},

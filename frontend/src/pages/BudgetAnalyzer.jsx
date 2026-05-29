@@ -73,7 +73,7 @@ function BudgetAnalyzer() {
             <div className="form-group">
               <label>Budget (optional)</label>
               <input name="budget" type="number" min="0" value={form.budget} onChange={handleChange} placeholder="Leave blank for estimate only" />
-              <p className="form-hint">Total trip budget in USD</p>
+              <p className="form-hint">Total trip budget (in destination currency)</p>
             </div>
             <div className="form-group">
               <label>Tier</label>
@@ -114,16 +114,16 @@ function BudgetAnalyzer() {
               <div className="feasibility-totals">
                 <div className="feasibility-total-item">
                   <span className="feasibility-total-label">Per Person / Day</span>
-                  <span className="feasibility-total-value">${analysis.per_person_daily}</span>
+                  <span className="feasibility-total-value">{analysis.currency}{analysis.per_person_daily}</span>
                 </div>
                 <div className="feasibility-total-item">
                   <span className="feasibility-total-label">Total Per Person</span>
-                  <span className="feasibility-total-value">${analysis.total_per_person}</span>
+                  <span className="feasibility-total-value">{analysis.currency}{analysis.total_per_person}</span>
                 </div>
                 <div className="feasibility-total-item">
                   <span className="feasibility-total-label">Total Trip Cost</span>
                   <span className="feasibility-total-value" style={{ color: analysis.over_budget ? "var(--danger)" : "var(--primary)" }}>
-                    ${analysis.total_trip_cost}
+                    {analysis.currency}{analysis.total_trip_cost}
                   </span>
                 </div>
               </div>
@@ -143,7 +143,7 @@ function BudgetAnalyzer() {
                     <div key={cat} className="analyzer-breakdown-row">
                       <div className="analyzer-breakdown-header">
                         <span className="analyzer-breakdown-name" style={{ textTransform: "capitalize" }}>{cat}</span>
-                        <span className="analyzer-breakdown-cost">${data.daily}/day &middot; ${data.total} total</span>
+                          <span className="analyzer-breakdown-cost">{analysis.currency}{data.daily}/day &middot; {analysis.currency}{data.total} total</span>
                       </div>
                       <div className="budget-bar-track" style={{ height: 8 }}>
                         <div className="budget-bar-fill" style={{ width: `${pct}%` }} />
@@ -168,13 +168,13 @@ function BudgetAnalyzer() {
                   <span className="multi-tier-icon">{TIERS.find((t) => t.value === tier)?.icon}</span>
                   <span className="multi-tier-label" style={{ textTransform: "capitalize" }}>{tier}</span>
                 </div>
-                <div className="multi-tier-total">${data.total_cost}</div>
-                <div className="multi-tier-daily">${data.daily_per_person}/day per person</div>
+                <div className="multi-tier-total">{multiTier.currency}{data.total_cost}</div>
+                <div className="multi-tier-daily">{multiTier.currency}{data.daily_per_person}/day per person</div>
                 <div className="multi-tier-breakdown">
                   {Object.entries(data.breakdown).map(([cat, cost]) => (
                     <div key={cat} className="multi-tier-item">
                       <span style={{ textTransform: "capitalize" }}>{cat}</span>
-                      <span>${cost}</span>
+                      <span>{multiTier.currency}{cost}</span>
                     </div>
                   ))}
                 </div>

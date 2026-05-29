@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import Trip, User
 from ..schemas import TripGenerate, TripResponse, PatchAction, ShareTripEmail
-from ..utils import calculate_budget
+from ..utils import calculate_budget, get_currency_for_destination
 from ..email_utils import send_share_trip_email
 import json
 import os
@@ -86,6 +86,7 @@ def optimize_day_schedule(day):
 
 
 def build_mock_itinerary(destination):
+    c = get_currency_for_destination(destination)
     return {
         "days": [
             {
@@ -101,7 +102,7 @@ def build_mock_itinerary(destination):
                         "lat": 28.6139, "lng": 77.2090,
                         "category": "relaxation",
                         "nearby_alternatives": [
-                            {"name": "Cafe Hop", "description": "Cozy cafe for a quick coffee break.", "duration": "30 min", "cost": "$5", "lat": 28.6150, "lng": 77.2100, "category": "food", "reason": "Across the street, zero transit time"}
+                            {"name": "Cafe Hop", "description": "Cozy cafe for a quick coffee break.", "duration": "30 min", "cost": f"{c}5", "lat": 28.6150, "lng": 77.2100, "category": "food", "reason": "Across the street, zero transit time"}
                         ]
                     },
                     {
@@ -109,11 +110,11 @@ def build_mock_itinerary(destination):
                         "time": "10:15 AM",
                         "duration": "2 hrs",
                         "description": "Guided walking tour of the main attractions and landmarks.",
-                        "cost": "$25",
+                        "cost": f"{c}25",
                         "lat": 28.7041, "lng": 77.1025,
                         "category": "sightseeing",
                         "nearby_alternatives": [
-                            {"name": "Rickshaw Ride", "description": "Quick guided rickshaw tour of old city lanes.", "duration": "45 min", "cost": "$10", "lat": 28.7000, "lng": 77.1000, "category": "adventure", "reason": "Same starting point, 75% shorter duration"}
+                            {"name": "Rickshaw Ride", "description": "Quick guided rickshaw tour of old city lanes.", "duration": "45 min", "cost": f"{c}10", "lat": 28.7000, "lng": 77.1000, "category": "adventure", "reason": "Same starting point, 75% shorter duration"}
                         ]
                     },
                     {
@@ -121,11 +122,11 @@ def build_mock_itinerary(destination):
                         "time": "12:30 PM",
                         "duration": "1 hr",
                         "description": "Try authentic local dishes at a highly-rated restaurant.",
-                        "cost": "$20",
+                        "cost": f"{c}20",
                         "lat": 28.6304, "lng": 77.2177,
                         "category": "food",
                         "nearby_alternatives": [
-                            {"name": "Street Food Walk", "description": "Quick tasting tour of 3 famous street stalls.", "duration": "40 min", "cost": "$8", "lat": 28.6310, "lng": 77.2180, "category": "food", "reason": "Same block, faster, cheaper"}
+                            {"name": "Street Food Walk", "description": "Quick tasting tour of 3 famous street stalls.", "duration": "40 min", "cost": f"{c}8", "lat": 28.6310, "lng": 77.2180, "category": "food", "reason": "Same block, faster, cheaper"}
                         ]
                     },
                     {
@@ -133,11 +134,11 @@ def build_mock_itinerary(destination):
                         "time": "02:00 PM",
                         "duration": "2.5 hrs",
                         "description": "Explore the famous historic fort and its architecture.",
-                        "cost": "$15",
+                        "cost": f"{c}15",
                         "lat": 28.6562, "lng": 77.2410,
                         "category": "sightseeing",
                         "nearby_alternatives": [
-                            {"name": "Sound & Light Show", "description": "Evening show at the fort grounds — just 1 hr.", "duration": "1 hr", "cost": "$10", "lat": 28.6560, "lng": 77.2415, "category": "culture", "reason": "Same location, half the time"}
+                            {"name": "Sound & Light Show", "description": "Evening show at the fort grounds — just 1 hr.", "duration": "1 hr", "cost": f"{c}10", "lat": 28.6560, "lng": 77.2415, "category": "culture", "reason": "Same location, half the time"}
                         ]
                     },
                     {
@@ -145,11 +146,11 @@ def build_mock_itinerary(destination):
                         "time": "05:00 PM",
                         "duration": "1.5 hrs",
                         "description": "Explore the local market for souvenirs and street food.",
-                        "cost": "$15",
+                        "cost": f"{c}15",
                         "lat": 28.6353, "lng": 77.2240,
                         "category": "shopping",
                         "nearby_alternatives": [
-                            {"name": "Sunset Rooftop Lounge", "description": "Rooftop bar with panoramic city views.", "duration": "45 min", "cost": "$12", "lat": 28.6360, "lng": 77.2230, "category": "nightlife", "reason": "2 min walk, perfect for sunset"}
+                            {"name": "Sunset Rooftop Lounge", "description": "Rooftop bar with panoramic city views.", "duration": "45 min", "cost": f"{c}12", "lat": 28.6360, "lng": 77.2230, "category": "nightlife", "reason": "2 min walk, perfect for sunset"}
                         ]
                     },
                 ],
@@ -175,11 +176,11 @@ def build_mock_itinerary(destination):
                         "time": "10:00 AM",
                         "duration": "2 hrs",
                         "description": "Explore the local museum to learn about culture and history.",
-                        "cost": "$10",
+                        "cost": f"{c}10",
                         "lat": 28.6180, "lng": 77.2320,
                         "category": "culture",
                         "nearby_alternatives": [
-                            {"name": "Art Gallery", "description": "Small gallery featuring local artists — quick walkthrough.", "duration": "40 min", "cost": "$5", "lat": 28.6190, "lng": 77.2300, "category": "culture", "reason": "2 blocks away, shorter visit"}
+                            {"name": "Art Gallery", "description": "Small gallery featuring local artists — quick walkthrough.", "duration": "40 min", "cost": f"{c}5", "lat": 28.6190, "lng": 77.2300, "category": "culture", "reason": "2 blocks away, shorter visit"}
                         ]
                     },
                     {
@@ -191,7 +192,7 @@ def build_mock_itinerary(destination):
                         "lat": 28.5967, "lng": 77.2200,
                         "category": "relaxation",
                         "nearby_alternatives": [
-                            {"name": "Botanical Glasshouse", "description": "Indoor exotic plant exhibit — 20 min walkthrough.", "duration": "20 min", "cost": "$3", "lat": 28.5970, "lng": 77.2210, "category": "sightseeing", "reason": "Inside the park, very quick"}
+                            {"name": "Botanical Glasshouse", "description": "Indoor exotic plant exhibit — 20 min walkthrough.", "duration": "20 min", "cost": f"{c}3", "lat": 28.5970, "lng": 77.2210, "category": "sightseeing", "reason": "Inside the park, very quick"}
                         ]
                     },
                     {
@@ -217,11 +218,11 @@ def build_mock_itinerary(destination):
                         "time": "07:00 AM",
                         "duration": "3 hrs",
                         "description": "Scenic waterfalls a short drive from the city center.",
-                        "cost": "$40",
+                        "cost": f"{c}40",
                         "lat": 28.4870, "lng": 77.0670,
                         "category": "adventure",
                         "nearby_alternatives": [
-                            {"name": "River Rafting", "description": "Short white-water rafting experience (1.5 hrs).", "duration": "1.5 hrs", "cost": "$35", "lat": 28.4860, "lng": 77.0680, "category": "adventure", "reason": "Same location, shorter duration"}
+                            {"name": "River Rafting", "description": "Short white-water rafting experience (1.5 hrs).", "duration": "1.5 hrs", "cost": f"{c}35", "lat": 28.4860, "lng": 77.0680, "category": "adventure", "reason": "Same location, shorter duration"}
                         ]
                     },
                     {
@@ -229,7 +230,7 @@ def build_mock_itinerary(destination):
                         "time": "10:30 AM",
                         "duration": "2 hrs",
                         "description": "Browse through traditional handicrafts and textiles.",
-                        "cost": "$30",
+                        "cost": f"{c}30",
                         "lat": 28.6353, "lng": 77.2240,
                         "category": "shopping",
                         "nearby_alternatives": [
@@ -241,11 +242,11 @@ def build_mock_itinerary(destination):
                         "time": "01:00 PM",
                         "duration": "2 hrs",
                         "description": "Learn to cook authentic local dishes from a professional chef.",
-                        "cost": "$35",
+                        "cost": f"{c}35",
                         "lat": 28.6190, "lng": 77.2340,
                         "category": "food",
                         "nearby_alternatives": [
-                            {"name": "Food Tasting Tour", "description": "Sample 5 local dishes at nearby stalls — 45 min.", "duration": "45 min", "cost": "$15", "lat": 28.6195, "lng": 77.2345, "category": "food", "reason": "Same neighborhood, quicker option"}
+                            {"name": "Food Tasting Tour", "description": "Sample 5 local dishes at nearby stalls — 45 min.", "duration": "45 min", "cost": f"{c}15", "lat": 28.6195, "lng": 77.2345, "category": "food", "reason": "Same neighborhood, quicker option"}
                         ]
                     },
                     {
@@ -253,11 +254,11 @@ def build_mock_itinerary(destination):
                         "time": "06:00 PM",
                         "duration": "2 hrs",
                         "description": "Special farewell dinner at a rooftop restaurant.",
-                        "cost": "$50",
+                        "cost": f"{c}50",
                         "lat": 28.6280, "lng": 77.2080,
                         "category": "food",
                         "nearby_alternatives": [
-                            {"name": "Street Food Finale", "description": "Quick farewell feast at famous street stalls.", "duration": "1 hr", "cost": "$15", "lat": 28.6285, "lng": 77.2075, "category": "food", "reason": "Same roof area, half the time & cost"}
+                            {"name": "Street Food Finale", "description": "Quick farewell feast at famous street stalls.", "duration": "1 hr", "cost": f"{c}15", "lat": 28.6285, "lng": 77.2075, "category": "food", "reason": "Same roof area, half the time & cost"}
                         ]
                     },
                 ],
@@ -335,28 +336,30 @@ def generate_trip(data: TripGenerate, user_id: int, db: Session = Depends(get_db
     itinerary_dict = None
 
     if not USE_MOCK and groq_client:
-        prompt = (
-            f"Plan a trip to {data.destination}. "
-            f"Budget: {data.budget or 'Not specified'}. "
-            f"Interests: {data.interests or 'General'}. "
-            f"Dates: {data.start_date or 'N/A'} to {data.end_date or 'N/A'}. "
-            "Provide a day-by-day itinerary with specific places, activities, "
-            "approximate costs, and coordinates (lat/lng) for each place. "
-            "For each activity include a start time (time), duration (duration), "
-            "and 1-2 nearby_alternatives (each with name, description, duration, cost, lat, lng, category, reason why it's a good alternative when short on time). "
-            "Return ONLY valid JSON with this exact structure (no markdown, no backticks): "
-            '{"days": [{"day": 1, "date": "...", "activities": [{"name": "...", "time": "...", "duration": "...", "description": "...", "cost": "...", "lat": 0.0, "lng": 0.0, "category": "...", "nearby_alternatives": [{"name": "...", "description": "...", "duration": "...", "cost": "...", "lat": 0.0, "lng": 0.0, "category": "...", "reason": "..."}]}]}]}'
-        )
-        try:
-            response = groq_client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=[{"role": "user", "content": prompt}],
-                response_format={"type": "json_object"},
+            currency_hint = get_currency_for_destination(data.destination)
+            prompt = (
+                f"Plan a trip to {data.destination}. "
+                f"Budget: {data.budget or 'Not specified'}. "
+                f"Interests: {data.interests or 'General'}. "
+                f"Dates: {data.start_date or 'N/A'} to {data.end_date or 'N/A'}. "
+                f"Use local currency symbol {currency_hint} for all costs (e.g., {currency_hint}25 instead of $25). "
+                "Provide a day-by-day itinerary with specific places, activities, "
+                "approximate costs, and coordinates (lat/lng) for each place. "
+                "For each activity include a start time (time), duration (duration), "
+                "and 1-2 nearby_alternatives (each with name, description, duration, cost, lat, lng, category, reason why it's a good alternative when short on time). "
+                "Return ONLY valid JSON with this exact structure (no markdown, no backticks): "
+                '{"days": [{"day": 1, "date": "...", "activities": [{"name": "...", "time": "...", "duration": "...", "description": "...", "cost": "...", "lat": 0.0, "lng": 0.0, "category": "...", "nearby_alternatives": [{"name": "...", "description": "...", "duration": "...", "cost": "...", "lat": 0.0, "lng": 0.0, "category": "...", "reason": "..."}]}]}]}'
             )
-            text = response.choices[0].message.content.strip()
-            itinerary_dict = json.loads(text)
-        except Exception:
-            pass
+            try:
+                response = groq_client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[{"role": "user", "content": prompt}],
+                    response_format={"type": "json_object"},
+                )
+                text = response.choices[0].message.content.strip()
+                itinerary_dict = json.loads(text)
+            except Exception:
+                pass
 
     if itinerary_dict is None:
         itinerary_dict = build_mock_itinerary(data.destination)
@@ -397,7 +400,7 @@ def _trip_dict(trip):
         "itinerary": trip.itinerary,
         "share_token": trip.share_token,
         "created_at": trip.created_at.isoformat() if trip.created_at else None,
-        "budget_summary": calculate_budget(trip.itinerary),
+        "budget_summary": calculate_budget(trip.itinerary, trip.destination),
     }
     return d
 
