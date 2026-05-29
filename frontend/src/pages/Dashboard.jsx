@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { useAuth } from "../AuthContext";
 import { trips } from "../api";
 import { useToast } from "../components/Toast";
@@ -46,6 +47,14 @@ function Dashboard() {
     setDeleteTarget(tripId);
   };
 
+  const today = new Date();
+  const upcoming = tripList.filter((t) => t.start_date && new Date(t.start_date) >= today);
+  const totalBudget = tripList.reduce((sum, t) => {
+    const num = t.budget ? parseFloat(t.budget.replace(/[^0-9.]/g, "")) : 0;
+    return sum + (isNaN(num) ? 0 : num);
+  }, 0);
+  const destinations = new Set(tripList.map((t) => t.destination?.toLowerCase())).size;
+
   if (loading) {
     return (
       <BackgroundSlideshow className="bg-slideshow-content-top">
@@ -80,19 +89,55 @@ function Dashboard() {
         </button>
       </div>
 
+      <motion.div
+        className="dashboard-stats"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, staggerChildren: 0.1 }}
+      >
+        <div className="stat-card">
+          <div className="stat-card-label">Total Trips</div>
+          <div className="stat-card-value primary">{tripList.length}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-card-label">Upcoming</div>
+          <div className="stat-card-value info">{upcoming.length}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-card-label">Budget Planned</div>
+          <div className="stat-card-value warning">${totalBudget.toLocaleString()}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-card-label">Destinations</div>
+          <div className="stat-card-value">{destinations}</div>
+        </div>
+      </motion.div>
+
       {tripList.length === 0 ? (
-        <div className="empty-state">
+        <motion.div
+          className="empty-state"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+        >
           <div className="empty-state-icon">&#9992;</div>
           <h3>No trips yet</h3>
           <p>Plan your first adventure!</p>
           <button className="btn btn-primary" onClick={() => navigate("/plan")}>
             Plan a Trip
           </button>
-        </div>
+        </motion.div>
       ) : (
         <div className="trip-grid">
-          {tripList.map((trip) => (
-            <div key={trip.id} className="trip-card" onClick={() => navigate(`/trips/${trip.id}`)}>
+          {tripList.map((trip, i) => (
+            <motion.div
+              key={trip.id}
+              className="trip-card"
+              onClick={() => navigate(`/trips/${trip.id}`)}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05 }}
+            >
               <div className="trip-card-delete">
                 <button className="btn btn-danger btn-sm" onClick={(e) => handleDeleteClick(e, trip.id)}>
                   Delete
@@ -118,7 +163,7 @@ function Dashboard() {
                   ))}
                 </div>
               )}
-            </div>
+            </motion.div>
           ))}
         </div>
       )}

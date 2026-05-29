@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import { useAuth } from "./AuthContext";
 import { ToastProvider } from "./components/Toast";
 import ScrollToTop from "./components/ScrollToTop";
@@ -18,24 +19,39 @@ function Lazy({ children }) {
   return <Suspense fallback={<div className="loading-page"><div className="spinner" /><p className="loading-text">Loading...</p></div>}>{children}</Suspense>;
 }
 
+const pageVariants = {
+  initial: { opacity: 0, y: 12 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.25, ease: "easeOut" } },
+  exit: { opacity: 0, y: -8, transition: { duration: 0.15, ease: "easeIn" } },
+};
+
+function AnimatedPage({ children }) {
+  return (
+    <motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit">
+      {children}
+    </motion.div>
+  );
+}
+
 function App() {
   const { user } = useAuth();
+  const location = useLocation();
 
   return (
     <ToastProvider>
       <ScrollToTop />
       <Navbar />
-      <div className="page-enter">
-        <Routes>
-          <Route path="/login" element={user ? <Navigate to="/" /> : <Lazy><Login /></Lazy>} />
-          <Route path="/signup" element={user ? <Navigate to="/" /> : <Lazy><Signup /></Lazy>} />
-          <Route path="/shared/:token" element={<Lazy><SharedTripView /></Lazy>} />
-          <Route path="/" element={user ? <Lazy><Dashboard /></Lazy> : <Navigate to="/login" />} />
-          <Route path="/chat" element={user ? <Lazy><Chat /></Lazy> : <Navigate to="/login" />} />
-          <Route path="/plan" element={user ? <Lazy><PlanTrip /></Lazy> : <Navigate to="/login" />} />
-          <Route path="/trips/:id" element={user ? <Lazy><TripView /></Lazy> : <Navigate to="/login" />} />
+      <AnimatePresence mode="wait">
+        <Routes location={location} key={location.pathname}>
+          <Route path="/login" element={user ? <Navigate to="/" /> : <Lazy><AnimatedPage><Login /></AnimatedPage></Lazy>} />
+          <Route path="/signup" element={user ? <Navigate to="/" /> : <Lazy><AnimatedPage><Signup /></AnimatedPage></Lazy>} />
+          <Route path="/shared/:token" element={<Lazy><AnimatedPage><SharedTripView /></AnimatedPage></Lazy>} />
+          <Route path="/" element={user ? <Lazy><AnimatedPage><Dashboard /></AnimatedPage></Lazy> : <Navigate to="/login" />} />
+          <Route path="/chat" element={user ? <Lazy><AnimatedPage><Chat /></AnimatedPage></Lazy> : <Navigate to="/login" />} />
+          <Route path="/plan" element={user ? <Lazy><AnimatedPage><PlanTrip /></AnimatedPage></Lazy> : <Navigate to="/login" />} />
+          <Route path="/trips/:id" element={user ? <Lazy><AnimatedPage><TripView /></AnimatedPage></Lazy> : <Navigate to="/login" />} />
         </Routes>
-      </div>
+      </AnimatePresence>
     </ToastProvider>
   );
 }

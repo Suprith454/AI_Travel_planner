@@ -1,5 +1,7 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { marked } from "marked";
 import { useAuth } from "../AuthContext";
 import { chat } from "../api";
 import TripPreview from "../components/TripPreview";
@@ -16,7 +18,7 @@ const supportsVoice = !!SpeechRecognition;
 
 function Chat() {
   const [messages, setMessages] = useState([
-    { role: "bot", text: "🌍 Where would you like to travel? Just tell me a destination and I'll help plan your trip!" },
+    { role: "bot", text: "Where would you like to travel? Just tell me a destination and I'll help plan your trip!", time: new Date() },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -26,6 +28,18 @@ function Chat() {
   const recognitionRef = useRef(null);
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  const botAvatar = useMemo(() => (
+    <div className="chat-avatar" style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-hover))", border: "none" }}>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M12 2a4 4 0 0 1 4 4v2a4 4 0 0 1-8 0V6a4 4 0 0 1 4-4z"/><path d="M2 18v2a4 4 0 0 0 4 4h12a4 4 0 0 0 4-4v-2"/><path d="M6 14h.01M18 14h.01M10 18h4"/></svg>
+    </div>
+  ), []);
+
+  const userAvatar = useMemo(() => (
+    <div className="chat-avatar" style={{ background: "var(--surface-secondary)" }}>
+      <span style={{ fontSize: 14 }}>{(user?.name || user?.email || "U")?.charAt(0).toUpperCase()}</span>
+    </div>
+  ), [user]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -94,19 +108,19 @@ function Chat() {
     setInput("");
 
     const history = messages.map((m) => ({ role: m.role, text: m.text }));
-    setMessages((prev) => [...prev, { role: "user", text: msg }]);
+    setMessages((prev) => [...prev, { role: "user", text: msg, time: new Date() }]);
     setLoading(true);
 
     try {
       const data = await chat.plan(msg, user.id, history);
       setMessages((prev) => [
         ...prev,
-        { role: "bot", text: data.reply, trip: data.trip || null },
+        { role: "bot", text: data.reply, trip: data.trip || null, time: new Date() },
       ]);
     } catch {
       setMessages((prev) => [
         ...prev,
-        { role: "bot", text: "Sorry, I couldn't process that. Please try again." },
+        { role: "bot", text: "Sorry, I couldn't process that. Please try again.", time: new Date() },
       ]);
     } finally {
       setLoading(false);
@@ -120,24 +134,44 @@ function Chat() {
     }
   };
 
+  const formatTime = (d) => {
+    if (!d) return "";
+    const date = d instanceof Date ? d : new Date(d);
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  };
+
+  const renderMarkdown = (text) => {
+    const html = marked.parse(text, { breaks: true, gfm: true });
+    return <div className="chat-text" dangerouslySetInnerHTML={{ __html: html }} />;
+  };
+
   return (
     <div className="chat-page">
       <div className="chat-messages">
         {messages.map((msg, i) => (
-          <div key={i} className={`chat-msg ${msg.role}`}>
-            <div className="chat-avatar">
-              {msg.role === "bot" ? "🤖" : "🧑"}
-            </div>
+          <motion.div
+            key={i}
+            className={`chat-msg ${msg.role}`}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            {msg.role === "bot" ? botAvatar : userAvatar}
             <div className="chat-bubble">
-              <div className="chat-text">{renderText(msg.text)}</div>
+              {renderMarkdown(msg.text)}
+              {msg.time && <div className="chat-time">{formatTime(msg.time)}</div>}
               {msg.trip && <TripPreview trip={msg.trip} onView={() => navigate(`/trips/${msg.trip.id}`)} />}
             </div>
-          </div>
+          </motion.div>
         ))}
 
         {loading && (
-          <div className="chat-msg bot">
-            <div className="chat-avatar">🤖</div>
+          <motion.div
+            className="chat-msg bot"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            {botAvatar}
             <div className="chat-bubble">
               <div className="chat-typing">
                 <span className="chat-typing-dot" />
@@ -145,7 +179,7 @@ function Chat() {
                 <span className="chat-typing-dot" />
               </div>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {messages.length === 1 && (
@@ -186,7 +220,7 @@ function Chat() {
             disabled={loading}
             title={listening ? "Stop recording" : "Start voice input"}
           >
-            {listening ? "🔴" : "🎤"}
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
           </button>
         )}
         <button
@@ -194,25 +228,15 @@ function Chat() {
           onClick={handleSend}
           disabled={loading || !input.trim()}
         >
-          {loading ? <span className="spinner spinner-sm" /> : "➤"}
+          {loading ? (
+            <span className="spinner spinner-sm" style={{ borderTopColor: "#fff", borderColor: "rgba(255,255,255,0.3)" }} />
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          )}
         </button>
       </div>
     </div>
   );
-}
-
-function renderText(text) {
-  if (!text) return null;
-  const lines = text.split("\n");
-  return lines.map((line, i) => {
-    if (line.startsWith("**") && line.endsWith("**")) {
-      return <p key={i} className="chat-bold">{line.replace(/\*\*/g, "")}</p>;
-    }
-    const rendered = line
-      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-      .replace(/`(.+?)`/g, "<code>$1</code>");
-    return <p key={i} dangerouslySetInnerHTML={{ __html: rendered }} />;
-  });
 }
 
 export default Chat;
