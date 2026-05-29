@@ -25,6 +25,8 @@ export const trips = {
   patch: (tripId, body) => request(`/trips/${tripId}`, { method: "PATCH", body: JSON.stringify(body) }),
   delete: (tripId) => request(`/trips/${tripId}`, { method: "DELETE" }),
   share: (tripId) => request(`/trips/${tripId}/share`, { method: "POST" }),
+  shareViaEmail: (tripId, recipientEmail, userId) =>
+    request(`/trips/share-email?user_id=${userId}`, { method: "POST", body: JSON.stringify({ recipient_email: recipientEmail, trip_id: tripId }) }),
   duplicate: (tripId) => request(`/trips/${tripId}/duplicate`, { method: "POST" }),
 };
 

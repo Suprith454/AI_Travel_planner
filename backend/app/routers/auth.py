@@ -6,6 +6,7 @@ import os
 from ..database import get_db
 from ..models import User
 from ..schemas import UserCreate, UserLogin
+from ..email_utils import send_welcome_email
 
 router = APIRouter()
 
@@ -30,6 +31,8 @@ def signup(user_data: UserCreate, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
     db.refresh(user)
+
+    send_welcome_email(user.email, user.name)
 
     return {"user_id": user.id, "email": user.email, "name": user.name, "message": "Account created"}
 

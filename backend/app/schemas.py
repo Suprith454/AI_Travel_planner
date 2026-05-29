@@ -14,6 +14,11 @@ class UserLogin(BaseModel):
     password: str
 
 
+class ShareTripEmail(BaseModel):
+    recipient_email: str
+    trip_id: int
+
+
 class TripGenerate(BaseModel):
     destination: str
     start_date: Optional[str] = None

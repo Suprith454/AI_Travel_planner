@@ -4,6 +4,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { trips, nearby, tools } from "../api";
 import { useToast } from "../components/Toast";
+import { useAuth } from "../AuthContext";
 import BudgetSummary from "../components/BudgetSummary";
 import WeatherPanel, { CONDITION_LABELS } from "../components/WeatherPanel";
 import NearbyModal from "../components/NearbyModal";
@@ -20,6 +21,10 @@ function TripView() {
   const [shareModal, setShareModal] = useState(false);
   const [shareLink, setShareLink] = useState("");
   const [shareLoading, setShareLoading] = useState(false);
+  const [emailShareModal, setEmailShareModal] = useState(false);
+  const [recipientEmail, setRecipientEmail] = useState("");
+  const [emailShareLoading, setEmailShareLoading] = useState(false);
+  const { user } = useAuth();
   const [hotels, setHotels] = useState([]);
   const [hotelsLoading, setHotelsLoading] = useState(false);
   const [showHotels, setShowHotels] = useState(false);
@@ -301,7 +306,10 @@ function TripView() {
         <div className="trip-actions">
           <button className="btn btn-outline btn-sm" onClick={handleDownloadPdf}>&#128196; PDF</button>
           <button className="btn btn-outline btn-sm" onClick={handleShare} disabled={shareLoading}>
-            {shareLoading ? <span className="spinner spinner-sm" /> : "\u{1F517}"} Share
+            {shareLoading ? <span className="spinner spinner-sm" /> : "\u{1F517}"} Copy Link
+          </button>
+          <button className="btn btn-outline btn-sm" onClick={() => setEmailShareModal(true)}>
+            {"\u2709\uFE0F"} Email
           </button>
           <button className="btn btn-outline btn-sm" onClick={loadHotels}>
             {hotelsLoading ? <span className="spinner spinner-sm" /> : "\u{1F3E8}"} Hotels
@@ -328,6 +336,48 @@ function TripView() {
                 Copy
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {emailShareModal && (
+        <div className="photo-modal-overlay" onClick={() => setEmailShareModal(false)}>
+          <div className="photo-modal" style={{ maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
+            <div className="photo-modal-header">
+              <h3>{'\u2709\uFE0F'} Share via Email</h3>
+              <button className="photo-modal-close" onClick={() => setEmailShareModal(false)}>&times;</button>
+            </div>
+            <p className="form-hint" style={{ marginBottom: 12 }}>
+              Send the trip itinerary link to an email address.
+            </p>
+            <input
+              className="form-input"
+              type="email"
+              placeholder="Enter recipient email"
+              value={recipientEmail}
+              onChange={(e) => setRecipientEmail(e.target.value)}
+              style={{ width: "100%", marginBottom: 12 }}
+            />
+            <button
+              className="btn btn-primary btn-sm"
+              style={{ width: "100%" }}
+              disabled={emailShareLoading || !recipientEmail.includes("@")}
+              onClick={async () => {
+                setEmailShareLoading(true);
+                try {
+                  await trips.shareViaEmail(id, recipientEmail, user?.id);
+                  addToast(`Trip shared to ${recipientEmail}!`, "success");
+                  setEmailShareModal(false);
+                  setRecipientEmail("");
+                } catch {
+                  addToast("Failed to send email", "error");
+                } finally {
+                  setEmailShareLoading(false);
+                }
+              }}
+            >
+              {emailShareLoading ? <span className="spinner spinner-sm" /> : "Send Email"}
+            </button>
           </div>
         </div>
       )}

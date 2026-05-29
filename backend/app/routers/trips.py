@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from ..database import get_db
-from ..models import Trip
-from ..schemas import TripGenerate, TripResponse, PatchAction
+from ..models import Trip, User
+from ..schemas import TripGenerate, TripResponse, PatchAction, ShareTripEmail
 from ..utils import calculate_budget
+from ..email_utils import send_share_trip_email
 import json
 import os
 import math
@@ -482,6 +483,22 @@ def generate_share_link(trip_id: int, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(trip)
     return {"share_token": trip.share_token}
+
+
+@router.post("/share-email")
+def share_trip_via_email(body: ShareTripEmail, user_id: int, db: Session = Depends(get_db)):
+    trip = db.query(Trip).filter(Trip.id == body.trip_id).first()
+    if not trip:
+        raise HTTPException(status_code=404, detail="Trip not found")
+    if not trip.share_token:
+        trip.share_token = secrets.token_urlsafe(16)
+        db.commit()
+        db.refresh(trip)
+    share_link = f"https://ai-travel-planner-8x4z.onrender.com/shared/{trip.share_token}"
+    user = db.query(User).filter(User.id == user_id).first()
+    sender_name = user.name if user else "Someone"
+    send_share_trip_email(body.recipient_email, share_link, trip.title, sender_name)
+    return {"message": f"Trip shared to {body.recipient_email}"}
 
 
 @router.get("/shared/{token}")
