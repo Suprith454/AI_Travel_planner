@@ -49,7 +49,9 @@ def build_system_prompt(user_name: str, trips_context: str) -> str:
         "RULES:\n"
         "1. When a user wants to plan a trip, you MUST have the DESTINATION and NUMBER OF DAYS before creating it. "
         "If either is missing, ask a clarifying question.\n"
-        "2. Budget is optional — ask for it but don't require it.\n"
+        "2. Budget is optional. If the user does NOT specify a budget, suggest 3 budget tiers: "
+        "Budget ($50-100/day), Mid ($150-250/day), Luxury ($350-500/day). "
+        "Ask which tier they prefer, or estimate a reasonable budget for the destination.\n"
         "3. Interests are optional — you can suggest activities based on the destination.\n"
         "4. Be conversational, friendly, and concise (under 120 words).\n"
         "5. You can reference the user's existing trips (listed below) when relevant.\n"
@@ -72,21 +74,34 @@ def build_system_prompt(user_name: str, trips_context: str) -> str:
     )
 
 
+def _get_budget_tier_guide(budget: str) -> str:
+    b = budget.lower() if budget else ""
+    if any(k in b for k in ("luxury", "high", "premium", "$300", "$400", "$500", "₹20000", "₹30000")):
+        return "Luxury — high-end venues, fine dining, premium experiences, 4-5 star hotels"
+    if any(k in b for k in ("mid", "moderate", "medium", "$100", "$150", "$200", "₹8000", "₹10000", "₹15000")):
+        return "Mid — mix of mid-range restaurants and paid attractions, 3-4 star hotels"
+    if any(k in b for k in ("budget", "cheap", "low", "$30", "$50", "$80", "₹2000", "₹3000", "₹5000")):
+        return "Budget — affordable options, street food, free attractions, budget hostels"
+    return "Mid — balanced mix of activities and accommodations"
+
+
 def generate_itinerary(destination: str, duration_days: int, budget: str, interests: str, travelers: int) -> dict:
+    budget_guide = _get_budget_tier_guide(budget)
     if not USE_MOCK and groq_client:
         prompt = (
             f"Plan a {duration_days}-day trip to {destination}. "
-            f"Budget: {budget}. "
+            f"Budget: {budget} ({budget_guide}). "
             f"Interests: {interests}. "
             f"Number of travelers: {travelers}. "
             "Provide a day-by-day itinerary with specific places, activities, "
             "approximate costs, and coordinates (lat/lng) for each place. "
             "Include for each activity: a start time (time), duration (duration), "
-            "category (food/sightseeing/adventure/culture/shopping/relaxation/nightlife), "
+            "category (food/sightseeing/adventure/culture/shopping/relaxation/nightlife/accommodation), "
+            "a hotel_tier (budget/mid/luxury) for accommodation activities, "
             "and 1-2 nearby_alternatives (name, description, duration, cost, lat, lng, category, reason). "
             "Make the itinerary realistic and detailed. "
             "Return ONLY valid JSON with this exact structure (no markdown, no backticks): "
-            '{"days": [{"day": 1, "date": "...", "activities": [{"name": "...", "time": "...", "duration": "...", "description": "...", "cost": "...", "lat": 0.0, "lng": 0.0, "category": "...", "nearby_alternatives": [...]}]}]}'
+            '{"days": [{"day": 1, "date": "...", "activities": [{"name": "...", "time": "...", "duration": "...", "description": "...", "cost": "...", "lat": 0.0, "lng": 0.0, "category": "...", "hotel_tier": "...", "nearby_alternatives": [...]}]}]}'
         )
         try:
             resp = groq_client.chat.completions.create(

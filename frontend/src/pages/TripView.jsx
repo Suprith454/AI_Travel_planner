@@ -2,11 +2,10 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { trips, photos, nearby } from "../api";
+import { trips, nearby } from "../api";
 import { useToast } from "../components/Toast";
-import AskAI from "../components/AskAI";
 import BudgetSummary from "../components/BudgetSummary";
-import WeatherPanel from "../components/WeatherPanel";
+import WeatherPanel, { CONDITION_LABELS } from "../components/WeatherPanel";
 import NearbyModal from "../components/NearbyModal";
 import { exportTripPdf } from "../utils/exportPdf";
 
@@ -15,9 +14,6 @@ function TripView() {
   const navigate = useNavigate();
   const [trip, setTrip] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [photoModal, setPhotoModal] = useState(null);
-  const [photoResults, setPhotoResults] = useState([]);
-  const [photoLoading, setPhotoLoading] = useState(false);
   const [mapModal, setMapModal] = useState(null);
   const [nearbyActivity, setNearbyActivity] = useState(null);
   const [applying, setApplying] = useState(null);
@@ -27,6 +23,7 @@ function TripView() {
   const [hotels, setHotels] = useState([]);
   const [hotelsLoading, setHotelsLoading] = useState(false);
   const [showHotels, setShowHotels] = useState(false);
+  const [dayWeather, setDayWeather] = useState({});
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
   const userMarkerRef = useRef(null);
@@ -166,21 +163,6 @@ function TripView() {
     }
   };
 
-  const openPhotos = async (place) => {
-    setPhotoModal(place);
-    setPhotoResults([]);
-    setPhotoLoading(true);
-    try {
-      const data = await photos.search(place);
-      setPhotoResults(data.results || []);
-    } catch {
-      addToast("Failed to load photos", "error");
-      setPhotoResults([]);
-    } finally {
-      setPhotoLoading(false);
-    }
-  };
-
   const handleShare = async () => {
     setShareLoading(true);
     try {
@@ -204,6 +186,15 @@ function TripView() {
     }
   };
 
+  const classifyHotel = (name, cat) => {
+    const n = (name + " " + (cat || "")).toLowerCase();
+    if (/resort|palace|grand|luxury|5-star|five star|premium|boutique|ritz|marriott.*luxury/.test(n)) return "luxury";
+    if (/inn|lodge|motel|hostel|budget|economy|2-star|two star|backpacker/.test(n)) return "budget";
+    return "mid";
+  };
+
+  const TIER_BADGES = { budget: { label: "Budget", class: "tier-budget" }, mid: { label: "Mid", class: "tier-mid" }, luxury: { label: "Luxury", class: "tier-luxury" } };
+
   const loadHotels = async () => {
     if (hotels.length > 0) { setShowHotels(!showHotels); return; }
     setHotelsLoading(true);
@@ -214,13 +205,33 @@ function TripView() {
         return;
       }
       const res = await nearby.search(firstDay.lat, firstDay.lng, 2000, "hotel");
-      setHotels(res.places || []);
+      const withTiers = (res.places || []).map((h) => ({ ...h, tier: classifyHotel(h.name, h.category) }));
+      setHotels(withTiers);
       setShowHotels(true);
     } catch {
       addToast("Failed to load hotels", "error");
     } finally {
       setHotelsLoading(false);
     }
+  };
+
+  const isIndoorActivity = (cat) => {
+    const c = (cat || "").toLowerCase();
+    return c.includes("museum") || c.includes("food") || c.includes("restaurant") || c.includes("shop") || c.includes("mall") || c.includes("culture") || c.includes("art") || c.includes("spa") || c.includes("cooking");
+  };
+
+  const getWeatherTip = (dayNum, cat) => {
+    const cond = dayWeather[dayNum];
+    const info = CONDITION_LABELS[cond];
+    if (!info) return null;
+    const indoor = isIndoorActivity(cat);
+    if (cond === "rainy" && indoor) return { icon: "\u{1F44D}", tip: "Great indoor choice for rainy weather" };
+    if (cond === "rainy" && !indoor) return { icon: "\u{1F327}\uFE0F", tip: "Consider indoor alternative" };
+    if (cond === "hot" && indoor) return { icon: "\u{2744}\uFE0F", tip: "Cool indoor break from heat" };
+    if (cond === "hot" && !indoor) return { icon: "\u2600\uFE0F", tip: "Avoid midday heat" };
+    if (cond === "pleasant" && !indoor) return { icon: "\u{1F31E}", tip: "Perfect outdoor weather" };
+    if (cond === "warm" && !indoor) return { icon: "\u{1F31E}", tip: "Great for outdoor activities" };
+    return null;
   };
 
   const getCategoryClass = (cat) => {
@@ -308,20 +319,24 @@ function TripView() {
             <button className="btn btn-outline btn-sm" onClick={() => setShowHotels(false)}>Close</button>
           </div>
           <div className="hotels-grid">
-            {hotels.map((h, i) => (
-              <div key={i} className="hotel-card">
-                <div className="hotel-card-name">{h.name}</div>
-                <div className="hotel-card-meta">
-                  <span>&#128205; {h.distance_m}m away</span>
-                  {h.category && <span className={`activity-category ${h.category === "hotel" ? "sightseeing" : getCategoryClass(h.category)}`}>{h.category}</span>}
+            {hotels.map((h, i) => {
+              const tierInfo = TIER_BADGES[h.tier] || TIER_BADGES.mid;
+              return (
+                <div key={i} className="hotel-card">
+                  <div className="hotel-card-name">{h.name}</div>
+                  <span className={`hotel-tier-badge ${tierInfo.class}`}>{tierInfo.label}</span>
+                  <div className="hotel-card-meta">
+                    <span>&#128205; {h.distance_m}m away</span>
+                    {h.category && <span className={`activity-category ${h.category === "hotel" ? "sightseeing" : getCategoryClass(h.category)}`}>{h.category}</span>}
+                  </div>
+                  {h.lat && h.lng && (
+                    <button className="btn btn-outline btn-sm" style={{ marginTop: 8 }} onClick={() => setMapModal(h)}>
+                      &#128506; View on Map
+                    </button>
+                  )}
                 </div>
-                {h.lat && h.lng && (
-                  <button className="btn btn-outline btn-sm" style={{ marginTop: 8 }} onClick={() => setMapModal(h)}>
-                    &#128506; View on Map
-                  </button>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -345,6 +360,7 @@ function TripView() {
                   lat={day.activities?.[0]?.lat}
                   lng={day.activities?.[0]?.lng}
                   dayLabel={`Day ${day.day}`}
+                  onCondition={(cond) => setDayWeather((prev) => ({ ...prev, [day.day]: cond }))}
                 />
               </div>
               {day.date && <span className="day-date" style={{ display: "block", marginBottom: 12 }}>{day.date}</span>}
@@ -363,6 +379,15 @@ function TripView() {
                               {act.category}
                             </span>
                           )}
+                          {(() => {
+                            const wt = getWeatherTip(day.day, act.category);
+                            if (!wt) return null;
+                            return (
+                              <span className="activity-weather-tip" title={wt.tip}>
+                                {wt.icon}
+                              </span>
+                            );
+                          })()}
                         </div>
                         {act.description && <div className="activity-desc">{act.description}</div>}
                         <div className="activity-footer">
@@ -386,12 +411,6 @@ function TripView() {
                                 &#128506; Map
                               </button>
                             )}
-                            <button
-                              className="btn btn-outline btn-sm"
-                              onClick={() => openPhotos(act.name)}
-                            >
-                              &#128247; Photos
-                            </button>
                           </div>
                         </div>
                       </div>
@@ -423,36 +442,6 @@ function TripView() {
         />
       )}
 
-      {photoModal && (
-        <div className="photo-modal-overlay" onClick={() => setPhotoModal(null)}>
-          <div className="photo-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="photo-modal-header">
-              <h3>&#128247; {photoModal}</h3>
-              <button className="photo-modal-close" onClick={() => setPhotoModal(null)}>&times;</button>
-            </div>
-            {photoLoading ? (
-              <div className="photo-loading">
-                <div className="spinner" style={{ margin: "0 auto 12px" }} />
-                <p>Loading photos...</p>
-              </div>
-            ) : photoResults.length === 0 ? (
-              <p className="photo-empty">No photos found.</p>
-            ) : (
-              <div className="photo-grid">
-                {photoResults.map((photo, i) => (
-                  <a key={i} href={photo.urls?.regular} target="_blank" rel="noopener noreferrer">
-                    <img
-                      src={photo.urls?.small}
-                      alt={photo.alt_description || photoModal}
-                    />
-                  </a>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
       {mapModal && (
         <div className="photo-modal-overlay" onClick={() => setMapModal(null)}>
           <div className="photo-modal" onClick={(e) => e.stopPropagation()}>
@@ -471,7 +460,6 @@ function TripView() {
         </div>
       )}
 
-      <AskAI tripId={id} />
     </div>
   );
 }

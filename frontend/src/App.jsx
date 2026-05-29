@@ -3,7 +3,6 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAuth } from "./AuthContext";
 import { ToastProvider } from "./components/Toast";
-import ScrollToTop from "./components/ScrollToTop";
 import Navbar from "./components/Navbar";
 import SharedTripView from "./pages/SharedTripView";
 import "./App.css";
@@ -39,7 +38,6 @@ function App() {
 
   return (
     <ToastProvider>
-      <ScrollToTop />
       <Navbar />
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>

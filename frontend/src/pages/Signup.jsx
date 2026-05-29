@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../AuthContext";
 import { auth } from "../api";
-import BackgroundSlideshow from "../components/BackgroundSlideshow";
 
 function Signup() {
   const [name, setName] = useState("");
@@ -43,7 +42,7 @@ function Signup() {
   };
 
   return (
-    <BackgroundSlideshow>
+    <div className="auth-page">
       <div className="auth-card">
         <div className="auth-brand">
           <div className="auth-brand-icon">&#9992;</div>
@@ -54,7 +53,7 @@ function Signup() {
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Name *</label>
-            <input type="text" value={name} onChange={(e) => { const val = e.target.value; if (/^[a-zA-Z\s]*$/.test(val)) setName(val); }} placeholder="Your full name" required />
+            <input type="text" value={name} onChange={handleNameChange} placeholder="Your full name" required />
           </div>
           <div className="form-group">
             <label>Email *</label>
@@ -68,7 +67,7 @@ function Signup() {
             <label>Confirm Password *</label>
             <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirm your password" required />
           </div>
-          {error && <p className="form-error">&#9888; {error}</p>}
+          {error && <p className="form-error">{error}</p>}
           <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: "100%", marginTop: 8 }}>
             {loading ? <span className="spinner spinner-sm" /> : "Create Account"}
           </button>
@@ -78,7 +77,7 @@ function Signup() {
           Already have an account? <Link to="/login">Sign in</Link>
         </p>
       </div>
-    </BackgroundSlideshow>
+    </div>
   );
 }
 

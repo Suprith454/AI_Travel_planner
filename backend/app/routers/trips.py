@@ -490,3 +490,24 @@ def get_shared_trip(token: str, db: Session = Depends(get_db)):
     if not trip:
         raise HTTPException(status_code=404, detail="Trip not found")
     return _trip_dict(trip)
+
+
+@router.post("/{trip_id}/duplicate")
+def duplicate_trip(trip_id: int, db: Session = Depends(get_db)):
+    original = db.query(Trip).filter(Trip.id == trip_id).first()
+    if not original:
+        raise HTTPException(status_code=404, detail="Trip not found")
+    new_trip = Trip(
+        user_id=original.user_id,
+        title=f"{original.title} (Copy)",
+        destination=original.destination,
+        start_date=original.start_date,
+        end_date=original.end_date,
+        budget=original.budget,
+        interests=original.interests,
+        itinerary=original.itinerary,
+    )
+    db.add(new_trip)
+    db.commit()
+    db.refresh(new_trip)
+    return _trip_dict(new_trip)

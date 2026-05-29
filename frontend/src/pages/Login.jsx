@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../AuthContext";
 import { auth } from "../api";
-import BackgroundSlideshow from "../components/BackgroundSlideshow";
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -28,7 +27,7 @@ function Login() {
   };
 
   return (
-    <BackgroundSlideshow>
+    <div className="auth-page">
       <div className="auth-card">
         <div className="auth-brand">
           <div className="auth-brand-icon">&#9992;</div>
@@ -43,9 +42,8 @@ function Login() {
           <div className="form-group">
             <label>Password</label>
             <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" required />
-
           </div>
-          {error && <p className="form-error">&#9888; {error}</p>}
+          {error && <p className="form-error">{error}</p>}
           <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: "100%", marginTop: 8 }}>
             {loading ? <span className="spinner spinner-sm" /> : "Sign In"}
           </button>
@@ -54,7 +52,7 @@ function Login() {
           Don't have an account? <Link to="/signup">Sign up</Link>
         </p>
       </div>
-    </BackgroundSlideshow>
+    </div>
   );
 }
 
