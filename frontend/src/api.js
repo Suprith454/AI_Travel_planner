@@ -41,3 +41,24 @@ export const nearby = {
   search: (lat, lng, radius = 500, category = "") =>
     request(`/nearby?lat=${lat}&lng=${lng}&radius=${radius}${category ? `&category=${category}` : ""}`),
 };
+
+export const tools = {
+  budgetAnalyze: (destination, days, travelers = 1, budget = null, tier = "mid") => {
+    let url = `/budget/analyze?destination=${encodeURIComponent(destination)}&days=${days}&travelers=${travelers}&tier=${tier}`;
+    if (budget) url += `&budget=${budget}`;
+    return request(url);
+  },
+  multiTier: (destination, days, travelers = 1) =>
+    request(`/budget/multi-tier?destination=${encodeURIComponent(destination)}&days=${days}&travelers=${travelers}`),
+  getaways: (location, budget = null, days = 2) => {
+    let url = `/getaways/nearby?location=${encodeURIComponent(location)}&days=${days}`;
+    if (budget) url += `&budget=${budget}`;
+    return request(url);
+  },
+  packingList: (destination, days, climate = "hot", international = false, religious_sites = false) =>
+    request(`/packing-list?destination=${encodeURIComponent(destination)}&days=${days}&climate=${climate}&international=${international}&religious_sites=${religious_sites}`),
+  emergency: (country = "india") =>
+    request(`/emergency?country=${encodeURIComponent(country)}`),
+  hiddenGems: (destination) =>
+    request(`/hidden-gems?destination=${encodeURIComponent(destination)}`),
+};

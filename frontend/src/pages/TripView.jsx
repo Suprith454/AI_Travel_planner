@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { trips, nearby } from "../api";
+import { trips, nearby, tools } from "../api";
 import { useToast } from "../components/Toast";
 import BudgetSummary from "../components/BudgetSummary";
 import WeatherPanel, { CONDITION_LABELS } from "../components/WeatherPanel";
@@ -23,6 +23,9 @@ function TripView() {
   const [hotels, setHotels] = useState([]);
   const [hotelsLoading, setHotelsLoading] = useState(false);
   const [showHotels, setShowHotels] = useState(false);
+  const [hiddenGems, setHiddenGems] = useState(null);
+  const [gemsLoading, setGemsLoading] = useState(false);
+  const [showGems, setShowGems] = useState(false);
   const [dayWeather, setDayWeather] = useState({});
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
@@ -215,6 +218,20 @@ function TripView() {
     }
   };
 
+  const loadHiddenGems = async () => {
+    if (hiddenGems) { setShowGems(!showGems); return; }
+    setGemsLoading(true);
+    try {
+      const res = await tools.hiddenGems(trip.destination);
+      setHiddenGems(res);
+      setShowGems(true);
+    } catch {
+      addToast("Failed to load hidden gems", "error");
+    } finally {
+      setGemsLoading(false);
+    }
+  };
+
   const isIndoorActivity = (cat) => {
     const c = (cat || "").toLowerCase();
     return c.includes("museum") || c.includes("food") || c.includes("restaurant") || c.includes("shop") || c.includes("mall") || c.includes("culture") || c.includes("art") || c.includes("spa") || c.includes("cooking");
@@ -289,6 +306,9 @@ function TripView() {
           <button className="btn btn-outline btn-sm" onClick={loadHotels}>
             {hotelsLoading ? <span className="spinner spinner-sm" /> : "\u{1F3E8}"} Hotels
           </button>
+          <button className="btn btn-outline btn-sm" onClick={loadHiddenGems}>
+            {gemsLoading ? <span className="spinner spinner-sm" /> : "\u{1F48E}"} Hidden Gems
+          </button>
         </div>
       </div>
 
@@ -308,6 +328,25 @@ function TripView() {
                 Copy
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showGems && hiddenGems && (
+        <div className="card">
+          <div className="card-header">
+            <h3>{'\u{1F48E}'} Hidden Gems — {hiddenGems.destination}</h3>
+            <button className="btn btn-outline btn-sm" onClick={() => setShowGems(false)}>Close</button>
+          </div>
+          <div className="hidden-gems-grid">
+            {hiddenGems.gems.map((gem, i) => (
+              <div key={i} className="hidden-gem-card">
+                <div className="hidden-gem-type">{gem.type}</div>
+                <h4 className="hidden-gem-name">{gem.name}</h4>
+                <p className="hidden-gem-why">{gem.why}</p>
+                <div className="hidden-gem-location">{'\u{1F4CD}'} {gem.location}</div>
+              </div>
+            ))}
           </div>
         </div>
       )}

@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import inspect, text
 from .database import engine, Base
-from .routers import auth, trips, chat, weather, nearby
+from .routers import auth, trips, chat, weather, nearby, tools
 
 Base.metadata.create_all(bind=engine)
 
@@ -54,6 +54,7 @@ app.include_router(trips.router, prefix="/api/trips", tags=["trips"])
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
 app.include_router(weather.router, prefix="/api", tags=["weather"])
 app.include_router(nearby.router, prefix="/api", tags=["nearby"])
+app.include_router(tools.router, prefix="/api", tags=["tools"])
 
 
 @app.get("/api/health")

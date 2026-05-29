@@ -13,6 +13,9 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const PlanTrip = lazy(() => import("./pages/PlanTrip"));
 const TripView = lazy(() => import("./pages/TripView"));
 const Chat = lazy(() => import("./pages/Chat"));
+const BudgetAnalyzer = lazy(() => import("./pages/BudgetAnalyzer"));
+const GetawayFinder = lazy(() => import("./pages/GetawayFinder"));
+const ToolsHub = lazy(() => import("./pages/ToolsHub"));
 
 function Lazy({ children }) {
   return <Suspense fallback={<div className="loading-page"><div className="spinner" /><p className="loading-text">Loading...</p></div>}>{children}</Suspense>;
@@ -48,6 +51,9 @@ function App() {
           <Route path="/chat" element={user ? <Lazy><AnimatedPage><Chat /></AnimatedPage></Lazy> : <Navigate to="/login" />} />
           <Route path="/plan" element={user ? <Lazy><AnimatedPage><PlanTrip /></AnimatedPage></Lazy> : <Navigate to="/login" />} />
           <Route path="/trips/:id" element={user ? <Lazy><AnimatedPage><TripView /></AnimatedPage></Lazy> : <Navigate to="/login" />} />
+          <Route path="/budget" element={user ? <Lazy><AnimatedPage><BudgetAnalyzer /></AnimatedPage></Lazy> : <Navigate to="/login" />} />
+          <Route path="/getaways" element={user ? <Lazy><AnimatedPage><GetawayFinder /></AnimatedPage></Lazy> : <Navigate to="/login" />} />
+          <Route path="/tools" element={user ? <Lazy><AnimatedPage><ToolsHub /></AnimatedPage></Lazy> : <Navigate to="/login" />} />
         </Routes>
       </AnimatePresence>
     </ToastProvider>
