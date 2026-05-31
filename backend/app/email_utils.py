@@ -5,7 +5,8 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
 
-load_dotenv()
+_env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".env")
+load_dotenv(_env_path)
 
 SMTP_USER = os.getenv("SMTP_USER")
 SMTP_PASS = os.getenv("SMTP_PASS")
@@ -26,8 +27,9 @@ def send_email(to: str, subject: str, html: str):
         server.login(SMTP_USER, SMTP_PASS)
         server.send_message(msg)
         server.quit()
-    except Exception:
-        pass
+        print(f"[EMAIL] Sent to {to}: {subject}")
+    except Exception as e:
+        print(f"[EMAIL ERROR] to {to}: {e}")
 
 
 def send_email_async(to: str, subject: str, html: str):
