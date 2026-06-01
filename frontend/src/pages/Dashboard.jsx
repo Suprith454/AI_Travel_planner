@@ -102,22 +102,27 @@ function Dashboard() {
               <div className="trip-card-delete">
                 <button className="btn btn-danger btn-sm" onClick={(e) => handleDeleteClick(e, trip.id)}>Delete</button>
               </div>
-              <div className="trip-card-top">
-                <div>
-                  <div className="trip-card-destination">{trip.destination}</div>
-                  {trip.start_date && (
-                    <div className="trip-card-dates">{trip.start_date} &rarr; {trip.end_date}</div>
-                  )}
-                </div>
+              <div className="trip-card-image">
+                <span className="trip-card-image-badge">{trip.destination?.split(",")[0] || trip.destination}</span>
               </div>
-              {trip.budget && <div className="trip-card-budget">&#128176; {trip.budget}</div>}
-              {trip.interests && (
-                <div className="trip-card-interests">
-                  {trip.interests.split(",").map((interest, i) => (
-                    <span key={i} className="trip-meta-badge interest">{interest.trim()}</span>
-                  ))}
+              <div className="trip-card-body">
+                <div className="trip-card-top">
+                  <div>
+                    <div className="trip-card-destination">{trip.destination}</div>
+                    {trip.start_date && (
+                      <div className="trip-card-dates">{trip.start_date} &rarr; {trip.end_date}</div>
+                    )}
+                  </div>
                 </div>
-              )}
+                {trip.budget && <div className="trip-card-budget">&#128176; {trip.budget}</div>}
+                {trip.interests && (
+                  <div className="trip-card-interests">
+                    {trip.interests.split(",").map((interest, j) => (
+                      <span key={j} className="trip-meta-badge interest">{interest.trim()}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
             </motion.div>
           ))}
         </div>

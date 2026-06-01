@@ -305,7 +305,7 @@ function TripView() {
   const days = trip.itinerary?.days || [];
 
   return (
-    <div className="main-content">
+    <div className="main-content page-enter">
       <button className="back-btn" onClick={() => navigate("/")}>
         &larr; Back to My Trips
       </button>
