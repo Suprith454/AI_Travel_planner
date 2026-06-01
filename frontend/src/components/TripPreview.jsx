@@ -50,7 +50,7 @@ function TripPreview({ trip, onView }) {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", background: "var(--surface-secondary)", borderRadius: "var(--radius-sm)", marginTop: 10 }}>
             <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>Total Estimated Cost</span>
             <span style={{ fontSize: 18, fontWeight: 800, color: "var(--text)" }}>
-              {trip.budget_summary.currency}{trip.budget_summary.total_cost.toFixed(2)}
+              {trip.budget_summary.currency}{(trip.budget_summary.total_cost ?? 0).toFixed(2)}
             </span>
           </div>
         )}

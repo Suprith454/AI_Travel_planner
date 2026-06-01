@@ -10,8 +10,8 @@ function BudgetSummary({ trip }) {
   const summary = trip?.budget_summary;
   if (!summary || summary.daily_costs.length === 0) return null;
 
-  const totalCost = summary.total_cost;
-  const currency = summary.currency;
+  const totalCost = summary.total_cost ?? 0;
+  const currency = summary.currency ?? "$";
   const budgetStr = trip.budget;
   const breakdown = summary.category_breakdown || [];
 
