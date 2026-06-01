@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YatraAI — Your Indian Travel Concierge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: #0A0F2C;
+  color: #FDF6EC;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #0A0F2C; }
+::-webkit-scrollbar-thumb { background: rgba(240,165,0,0.3); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(240,165,0,0.5); }
+
+/* === ANIMATED BACKGROUND === */
+.bg-orbs {
+  position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
+}
+.bg-orbs .orb {
+  position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.15;
+  animation: orbFloat 12s ease-in-out infinite;
+}
+.bg-orbs .orb:nth-child(1) { width: 600px; height: 600px; background: #F0A500; top: -10%; left: -10%; animation-delay: 0s; }
+.bg-orbs .orb:nth-child(2) { width: 500px; height: 500px; background: #FF6B6B; bottom: -10%; right: -10%; animation-delay: -4s; }
+.bg-orbs .orb:nth-child(3) { width: 400px; height: 400px; background: #6366F1; top: 40%; left: 40%; animation-delay: -8s; }
+@keyframes orbFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -40px) scale(1.1); }
+  66% { transform: translate(-20px, 30px) scale(0.9); }
+}
+
+/* === LAYOUT === */
+.app { position: relative; z-index: 1; min-height: 100vh; }
+.navbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(10,15,44,0.85); backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(240,165,0,0.1);
+  padding: 0 28px; height: 68px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.navbar-logo { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 800; color: #FDF6EC; display: flex; align-items: center; gap: 8px; }
+.navbar-logo span { background: linear-gradient(135deg, #F0A500, #FF6B6B); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 24px; }
+.navbar-links { display: flex; gap: 4px; flex-wrap: wrap; }
+.navbar-links button {
+  background: none; border: none; color: rgba(253,246,236,0.55); font-family: 'DM Sans', sans-serif;
+  font-size: 13px; font-weight: 500; padding: 8px 14px; border-radius: 8px; cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1); position: relative;
+}
+.navbar-links button:hover { color: #FDF6EC; background: rgba(240,165,0,0.08); }
+.navbar-links button.active { color: #F0A500; background: rgba(240,165,0,0.1); }
+.navbar-links button.active::after {
+  content: ''; position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%);
+  width: 18px; height: 3px; background: #F0A500; border-radius: 2px;
+}
+
+.layout { display: flex; padding-top: 68px; min-height: calc(100vh - 68px); }
+.main-content { flex: 1; padding: 40px 44px 80px; max-width: calc(100vw - 370px); position: relative; z-index: 1; }
+.main-content > section { animation: fadeSlideUp 0.5s ease; margin-bottom: 60px; }
+@keyframes fadeSlideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+/* === CHAT PANEL === */
+.chat-panel {
+  position: fixed; right: 0; top: 68px; width: 370px; height: calc(100vh - 68px);
+  background: rgba(15,20,50,0.92); backdrop-filter: blur(20px);
+  border-left: 1px solid rgba(240,165,0,0.08);
+  display: flex; flex-direction: column; z-index: 50;
+}
+.chat-header {
+  padding: 18px 20px; border-bottom: 1px solid rgba(240,165,0,0.08);
+  display: flex; align-items: center; gap: 10px;
+}
+.chat-header h3 { font-family: 'Playfair Display', serif; font-size: 16px; color: #FDF6EC; }
+.chat-dot { width: 8px; height: 8px; border-radius: 50%; background: #22C55E; box-shadow: 0 0 8px rgba(34,197,94,0.5); animation: dotPulse 2s ease infinite; }
+@keyframes dotPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+.chat-header-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.api-key-input {
+  background: rgba(253,246,236,0.06); border: 1px solid rgba(240,165,0,0.15);
+  border-radius: 6px; padding: 5px 10px; color: #FDF6EC; font-size: 11px; width: 110px;
+  font-family: 'DM Sans', sans-serif; outline: none; transition: border-color 0.2s;
+}
+.api-key-input:focus { border-color: #F0A500; }
+.api-key-input::placeholder { color: rgba(253,246,236,0.25); }
+.chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.chat-msg { max-width: 88%; animation: fadeSlideUp 0.3s ease; }
+.chat-msg.user { align-self: flex-end; }
+.chat-msg.bot { align-self: flex-start; }
+.chat-bubble {
+  padding: 12px 16px; border-radius: 14px; font-size: 13px; line-height: 1.6;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.chat-msg.user .chat-bubble { background: linear-gradient(135deg, #F0A500, #E69500); color: #0A0F2C; border-bottom-right-radius: 4px; font-weight: 500; }
+.chat-msg.bot .chat-bubble { background: rgba(253,246,236,0.06); border: 1px solid rgba(253,246,236,0.08); color: #FDF6EC; border-bottom-left-radius: 4px; }
+.chat-typing { display: flex; gap: 4px; padding: 12px 16px; }
+.chat-typing span { width: 8px; height: 8px; border-radius: 50%; background: rgba(240,165,0,0.5); animation: typingBounce 1.4s ease infinite; }
+.chat-typing span:nth-child(2) { animation-delay: 0.2s; }
+.chat-typing span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typingBounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
+
+.chat-suggestions { padding: 8px 16px 4px; display: flex; flex-wrap: wrap; gap: 6px; }
+.chat-suggestion-chip {
+  background: rgba(240,165,0,0.08); border: 1px solid rgba(240,165,0,0.12);
+  border-radius: 20px; padding: 5px 12px; font-size: 11px; color: rgba(253,246,236,0.7);
+  cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s; white-space: nowrap;
+}
+.chat-suggestion-chip:hover { background: rgba(240,165,0,0.15); color: #F0A500; border-color: rgba(240,165,0,0.3); }
+.chat-input-bar {
+  padding: 12px 16px; border-top: 1px solid rgba(240,165,0,0.08);
+  display: flex; gap: 8px; align-items: flex-end;
+}
+.chat-input {
+  flex: 1; background: rgba(253,246,236,0.05); border: 1px solid rgba(240,165,0,0.1);
+  border-radius: 10px; padding: 10px 14px; color: #FDF6EC; font-size: 13px;
+  font-family: 'DM Sans', sans-serif; outline: none; resize: none; max-height: 80px; line-height: 1.4;
+}
+.chat-input:focus { border-color: rgba(240,165,0,0.3); }
+.chat-input::placeholder { color: rgba(253,246,236,0.2); }
+.chat-send {
+  background: linear-gradient(135deg, #F0A500, #E69500); border: none; color: #0A0F2C;
+  width: 38px; height: 38px; border-radius: 10px; cursor: pointer; display: flex;
+  align-items: center; justify-content: center; font-size: 16px;
+  transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1); flex-shrink: 0;
+}
+.chat-send:hover { transform: scale(1.08); box-shadow: 0 4px 14px rgba(240,165,0,0.3); }
+.chat-send:disabled { opacity: 0.3; cursor: not-allowed; transform: none; box-shadow: none; }
+
+/* === SECTION STYLES === */
+.section-title {
+  font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 800;
+  color: #FDF6EC; margin-bottom: 8px; letter-spacing: -0.3px;
+}
+.section-subtitle { color: rgba(253,246,236,0.5); font-size: 14px; margin-bottom: 28px; }
+.section-divider { height: 1px; background: linear-gradient(90deg, rgba(240,165,0,0.15), transparent); margin: 40px 0; }
+
+/* === HERO SECTION === */
+.hero {
+  background: linear-gradient(145deg, rgba(20,28,70,0.6), rgba(10,15,44,0.8));
+  border: 1px solid rgba(240,165,0,0.1); border-radius: 20px;
+  padding: 44px 40px; position: relative; overflow: hidden;
+  backdrop-filter: blur(12px);
+}
+.hero::before {
+  content: ''; position: absolute; top: -30%; right: -20%; width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(240,165,0,0.08), transparent 60%); pointer-events: none;
+}
+.hero::after {
+  content: ''; position: absolute; bottom: -30%; left: -10%; width: 300px; height: 300px;
+  background: radial-gradient(circle, rgba(255,107,107,0.06), transparent 60%); pointer-events: none;
+}
+.hero-content { position: relative; z-index: 1; }
+.hero h1 { font-family: 'Playfair Display', serif; font-size: 38px; font-weight: 900; color: #FDF6EC; margin-bottom: 6px; letter-spacing: -0.5px; }
+.hero h1 .gold { background: linear-gradient(135deg, #F0A500, #FF6B6B); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.hero p { color: rgba(253,246,236,0.55); font-size: 15px; margin-bottom: 28px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group label { font-size: 12px; font-weight: 600; color: rgba(253,246,236,0.6); text-transform: uppercase; letter-spacing: 0.5px; }
+.form-group input, .form-group select, .form-group textarea {
+  background: rgba(10,15,44,0.6); border: 1px solid rgba(240,165,0,0.1);
+  border-radius: 10px; padding: 12px 14px; color: #FDF6EC; font-size: 14px;
+  font-family: 'DM Sans', sans-serif; outline: none; transition: all 0.2s;
+}
+.form-group input:focus, .form-group select:focus { border-color: rgba(240,165,0,0.35); box-shadow: 0 0 0 3px rgba(240,165,0,0.06); }
+.form-group input::placeholder { color: rgba(253,246,236,0.2); }
+.form-group select option { background: #0A0F2C; color: #FDF6EC; }
+
+.chips-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.chip {
+  background: rgba(240,165,0,0.06); border: 1px solid rgba(240,165,0,0.1);
+  border-radius: 20px; padding: 6px 14px; font-size: 12px; color: rgba(253,246,236,0.6);
+  cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s;
+}
+.chip:hover { background: rgba(240,165,0,0.1); color: #F0A500; border-color: rgba(240,165,0,0.25); }
+.chip.active { background: rgba(240,165,0,0.15); color: #F0A500; border-color: #F0A500; }
+
+.trip-type-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.trip-type-btn {
+  flex: 1; min-width: 80px; padding: 10px 12px; background: rgba(10,15,44,0.6);
+  border: 1px solid rgba(240,165,0,0.1); border-radius: 10px; color: rgba(253,246,236,0.5);
+  cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500;
+  transition: all 0.2s; text-align: center;
+}
+.trip-type-btn:hover { border-color: rgba(240,165,0,0.25); color: #FDF6EC; }
+.trip-type-btn.active { background: rgba(240,165,0,0.1); border-color: #F0A500; color: #F0A500; }
+
+.budget-slider-row { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+.budget-slider { flex: 1; -webkit-appearance: none; height: 4px; border-radius: 2px; background: rgba(240,165,0,0.15); outline: none; }
+.budget-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: linear-gradient(135deg, #F0A500, #E69500); cursor: pointer; box-shadow: 0 2px 8px rgba(240,165,0,0.3); }
+.budget-label { font-size: 16px; font-weight: 700; color: #F0A500; min-width: 100px; text-align: right; }
+
+.cta-btn {
+  background: linear-gradient(135deg, #F0A500, #E69500); border: none; color: #0A0F2C;
+  padding: 16px 36px; border-radius: 12px; font-size: 16px; font-weight: 700;
+  font-family: 'DM Sans', sans-serif; cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  display: inline-flex; align-items: center; gap: 10px; box-shadow: 0 4px 20px rgba(240,165,0,0.25);
+}
+.cta-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(240,165,0,0.35); }
+.cta-btn:active { transform: scale(0.97); }
+
+/* === GLASS CARD === */
+.glass-card {
+  background: rgba(20,28,70,0.4); backdrop-filter: blur(12px);
+  border: 1px solid rgba(240,165,0,0.08); border-radius: 16px;
+  padding: 24px; transition: all 0.3s ease;
+}
+.glass-card:hover { border-color: rgba(240,165,0,0.15); box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
+.glass-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+.glass-card-header h3 { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; color: #FDF6EC; }
+
+/* === ITINERARY === */
+.timeline { position: relative; padding-left: 32px; }
+.timeline::before { content: ''; position: absolute; left: 11px; top: 10px; bottom: 10px; width: 2px; background: linear-gradient(180deg, #F0A500, rgba(240,165,0,0.1)); }
+.day-card {
+  position: relative; margin-bottom: 20px; background: rgba(20,28,70,0.3);
+  border: 1px solid rgba(240,165,0,0.06); border-radius: 14px; padding: 20px;
+  transition: all 0.3s ease;
+}
+.day-card:hover { border-color: rgba(240,165,0,0.12); box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+.day-card::before {
+  content: ''; position: absolute; left: -24px; top: 24px; width: 12px; height: 12px;
+  border-radius: 50%; background: #F0A500; border: 3px solid #0A0F2C;
+  box-shadow: 0 0 0 3px #F0A500, 0 2px 8px rgba(240,165,0,0.3);
+}
+.day-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid rgba(240,165,0,0.06); }
+.day-card-header h4 { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 700; color: #FDF6EC; display: flex; align-items: center; gap: 10px; }
+.day-number { display: inline-flex; width: 28px; height: 28px; background: linear-gradient(135deg, #F0A500, #E69500); border-radius: 50%; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #0A0F2C; }
+.day-date { font-size: 12px; color: rgba(253,246,236,0.4); }
+.weather-badge { display: flex; align-items: center; gap: 4px; font-size: 12px; color: rgba(253,246,236,0.5); }
+
+.activity { padding: 12px 0; border-bottom: 1px solid rgba(240,165,0,0.04); }
+.activity:last-child { border-bottom: none; padding-bottom: 0; }
+.activity-row { display: flex; gap: 12px; }
+.activity-time { min-width: 65px; font-size: 12px; font-weight: 600; color: #F0A500; padding-top: 2px; }
+.activity-content { flex: 1; }
+.activity-name { font-weight: 600; font-size: 14px; color: #FDF6EC; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.activity-cat { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+.activity-cat.food { background: rgba(240,165,0,0.12); color: #F0A500; }
+.activity-cat.sight { background: rgba(99,102,241,0.12); color: #818CF8; }
+.activity-cat.adv { background: rgba(34,197,94,0.12); color: #4ADE80; }
+.activity-cat.shop { background: rgba(255,107,107,0.12); color: #FF6B6B; }
+.activity-cat.relax { background: rgba(168,85,247,0.12); color: #C084FC; }
+.activity-desc { font-size: 13px; color: rgba(253,246,236,0.5); margin-top: 4px; line-height: 1.5; }
+.activity-cost { font-size: 13px; font-weight: 600; color: #F0A500; display: flex; align-items: center; gap: 4px; margin-top: 6px; }
+.activity-dur { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 8px; background: rgba(240,165,0,0.08); color: rgba(240,165,0,0.7); white-space: nowrap; }
+
+/* === BUDGET === */
+.budget-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.chart-container { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+.budget-details { display: flex; flex-direction: column; gap: 12px; }
+.budget-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(240,165,0,0.04); }
+.budget-row:last-child { border-bottom: none; }
+.budget-row-label { font-size: 13px; font-weight: 500; color: rgba(253,246,236,0.6); display: flex; align-items: center; gap: 8px; }
+.budget-row-val { font-size: 14px; font-weight: 700; color: #FDF6EC; }
+.budget-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.progress-track { height: 8px; background: rgba(240,165,0,0.06); border-radius: 4px; overflow: hidden; margin: 12px 0; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, #F0A500, #FF6B6B); border-radius: 4px; transition: width 0.6s cubic-bezier(0.34,1.56,0.64,1); }
+.budget-health { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; }
+.budget-health.green { color: #4ADE80; }
+.budget-health.yellow { color: #F0A500; }
+.budget-health.red { color: #FF6B6B; }
+
+.expense-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+.expense-table th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: rgba(253,246,236,0.35); padding: 8px 10px; border-bottom: 1px solid rgba(240,165,0,0.06); }
+.expense-table td { padding: 8px 10px; font-size: 13px; color: rgba(253,246,236,0.65); border-bottom: 1px solid rgba(240,165,0,0.03); }
+.expense-table tr:hover td { background: rgba(240,165,0,0.02); }
+.expense-table .amount { font-weight: 600; color: #FDF6EC; }
+.expense-input { background: rgba(10,15,44,0.6); border: 1px solid rgba(240,165,0,0.1); border-radius: 6px; padding: 6px 8px; color: #FDF6EC; font-size: 12px; font-family: 'DM Sans', sans-serif; outline: none; width: 100%; }
+.expense-input:focus { border-color: rgba(240,165,0,0.3); }
+.btn-sm { padding: 6px 14px; font-size: 12px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s; }
+.btn-sm.gold { background: rgba(240,165,0,0.12); color: #F0A500; }
+.btn-sm.gold:hover { background: rgba(240,165,0,0.2); }
+.btn-sm.danger { background: rgba(255,107,107,0.12); color: #FF6B6B; }
+.btn-sm.danger:hover { background: rgba(255,107,107,0.2); }
+.btn-sm.outline { background: transparent; border: 1px solid rgba(240,165,0,0.15); color: rgba(253,246,236,0.5); }
+.btn-sm.outline:hover { border-color: rgba(240,165,0,0.3); color: #FDF6EC; }
+
+/* === HOTELS === */
+.hotel-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.hotel-card {
+  background: rgba(20,28,70,0.3); border: 1px solid rgba(240,165,0,0.06);
+  border-radius: 14px; padding: 20px; transition: all 0.3s ease;
+}
+.hotel-card:hover { border-color: rgba(240,165,0,0.15); transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
+.hotel-name { font-size: 15px; font-weight: 700; color: #FDF6EC; margin-bottom: 4px; }
+.hotel-stars { color: #F0A500; font-size: 12px; margin-bottom: 8px; }
+.hotel-location { font-size: 12px; color: rgba(253,246,236,0.4); margin-bottom: 10px; }
+.hotel-amenities { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 12px; }
+.hotel-amenity { font-size: 10px; padding: 3px 8px; border-radius: 6px; background: rgba(240,165,0,0.06); color: rgba(253,246,236,0.5); }
+.hotel-price { font-size: 20px; font-weight: 800; color: #F0A500; margin-bottom: 12px; }
+.hotel-price span { font-size: 12px; font-weight: 400; color: rgba(253,246,236,0.35); }
+
+.filter-bar { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+
+/* === FLIGHTS === */
+.flight-card { background: rgba(20,28,70,0.3); border: 1px solid rgba(240,165,0,0.06); border-radius: 14px; padding: 20px; margin-bottom: 12px; transition: all 0.3s ease; }
+.flight-card:hover { border-color: rgba(240,165,0,0.12); transform: translateX(4px); }
+.flight-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.flight-airline { font-weight: 700; color: #FDF6EC; font-size: 15px; min-width: 120px; }
+.flight-time { font-size: 18px; font-weight: 700; color: #FDF6EC; }
+.flight-dur { font-size: 12px; color: rgba(253,246,236,0.4); }
+.flight-stops { font-size: 12px; padding: 3px 10px; border-radius: 10px; }
+.flight-stops.direct { background: rgba(34,197,94,0.1); color: #4ADE80; }
+.flight-stops.onestop { background: rgba(240,165,0,0.1); color: #F0A500; }
+.flight-price { font-size: 20px; font-weight: 800; color: #F0A500; margin-left: auto; }
+
+/* === CHECKLIST === */
+.checklist-categories { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+.checklist-cat { background: rgba(20,28,70,0.3); border: 1px solid rgba(240,165,0,0.06); border-radius: 12px; padding: 16px; }
+.checklist-cat h4 { font-size: 13px; font-weight: 700; color: #F0A500; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.3px; }
+.checklist-item { display: flex; align-items: center; gap: 8px; padding: 5px 0; cursor: pointer; font-size: 13px; color: rgba(253,246,236,0.6); transition: all 0.2s; }
+.checklist-item:hover { color: #FDF6EC; }
+.checklist-item.checked { color: rgba(253,246,236,0.3); text-decoration: line-through; }
+.checklist-item input[type="checkbox"] { accent-color: #F0A500; width: 16px; height: 16px; cursor: pointer; }
+.checklist-progress { width: 100%; margin-bottom: 20px; }
+.checklist-progress-text { display: flex; justify-content: space-between; font-size: 13px; color: rgba(253,246,236,0.5); margin-bottom: 6px; }
+
+/* === TIPS === */
+.tips-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.tip-card { background: rgba(20,28,70,0.3); border: 1px solid rgba(240,165,0,0.06); border-radius: 14px; padding: 20px; transition: all 0.3s ease; }
+.tip-card:hover { border-color: rgba(240,165,0,0.12); transform: translateY(-2px); }
+.tip-card h4 { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 700; color: #FDF6EC; margin-bottom: 10px; }
+.tip-card p { font-size: 13px; color: rgba(253,246,236,0.55); line-height: 1.6; }
+.tip-icon { font-size: 24px; margin-bottom: 10px; display: block; }
+.emergency-numbers { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.emergency-item { background: rgba(240,165,0,0.06); border: 1px solid rgba(240,165,0,0.08); border-radius: 8px; padding: 8px 14px; flex: 1; min-width: 120px; }
+.emergency-item .label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.3px; color: rgba(253,246,236,0.35); }
+.emergency-item .number { font-size: 18px; font-weight: 800; color: #FF6B6B; font-family: 'DM Sans', sans-serif; }
+
+/* === RESPONSIVE === */
+@media (max-width: 1100px) {
+  .chat-panel { width: 320px; }
+  .main-content { padding: 30px; max-width: calc(100vw - 320px); }
+  .budget-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 900px) {
+  .chat-panel { display: none; }
+  .main-content { max-width: 100%; padding: 24px 20px; }
+  .mobile-chat-btn {
+    display: flex !important; position: fixed; bottom: 20px; right: 20px; z-index: 200;
+    width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #F0A500, #E69500);
+    border: none; color: #0A0F2C; font-size: 24px; cursor: pointer; align-items: center; justify-content: center;
+    box-shadow: 0 4px 20px rgba(240,165,0,0.3); transition: all 0.3s ease;
+  }
+  .mobile-chat-btn:hover { transform: scale(1.1); }
+  .mobile-chat-overlay {
+    position: fixed; inset: 0; z-index: 300; display: flex; flex-direction: column;
+    background: rgba(10,15,44,0.98); backdrop-filter: blur(20px);
+    animation: fadeSlideUp 0.3s ease;
+  }
+  .mobile-chat-overlay .chat-header { border-bottom-color: rgba(240,165,0,0.1); }
+  .mobile-chat-overlay .chat-messages { flex: 1; }
+  .mobile-chat-close {
+    position: absolute; top: 16px; right: 16px; width: 36px; height: 36px;
+    border-radius: 50%; background: rgba(255,107,107,0.1); border: none;
+    color: #FF6B6B; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .navbar-links button { font-size: 12px; padding: 6px 10px; }
+  .navbar { padding: 0 14px; height: 60px; }
+  .layout { padding-top: 60px; }
+  .hero { padding: 28px 24px; }
+  .hero h1 { font-size: 28px; }
+  .form-row { grid-template-columns: 1fr; }
+}
+@media (min-width: 901px) { .mobile-chat-btn { display: none !important; } }
+
+/* === UTILITY === */
+.text-gold { color: #F0A500; }
+.text-muted { color: rgba(253,246,236,0.4); }
+.mt-2 { margin-top: 8px; }
+.mb-2 { margin-bottom: 8px; }
+.mb-4 { margin-bottom: 16px; }
+.flex { display: flex; }
+.flex-wrap { flex-wrap: wrap; }
+.gap-2 { gap: 8px; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+/* ============ INDIAN NUMBER FORMAT ============ */
+const INR = (n) => (n != null ? '\u20B9' + Number(n).toLocaleString('en-IN') : '\u20B90');
+
+/* ============ MOCK GOA DATA ============ */
+const GOA_ITINERARY = [
+  { day: 1, date: 'Mon, 15 Dec', weather: '\u2600\uFE0F 32\u00B0C', activities: [
+    { time: '09:00', name: 'Arrival & Check-in at North Goa Resort', cat: 'relax', dur: '2 hrs', cost: 0, desc: 'Check into a beachfront resort in Candolim. Freshen up and enjoy welcome drink.' },
+    { time: '11:30', name: 'Fort Aguada Exploration', cat: 'sight', dur: '1.5 hrs', cost: 500, desc: 'Explore the 17th-century Portuguese fort with panoramic ocean views.' },
+    { time: '13:00', name: 'Beachside Lunch at Calangute', cat: 'food', dur: '1 hr', cost: 1200, desc: 'Fresh seafood at a shanty beach restaurant. Try Goan fish curry!' },
+    { time: '15:00', name: 'Calangute & Baga Beach Stroll', cat: 'relax', dur: '2 hrs', cost: 0, desc: 'Walk along the sandy shores, shop at beach shacks, enjoy the sunset.' },
+    { time: '19:00', name: 'Sunset Cruise on Mandovi River', cat: 'adv', dur: '2 hrs', cost: 1800, desc: 'Enjoy a romantic sunset cruise with live music and drinks.' },
+    { time: '21:00', name: 'Dinner at Fisherman\'s Wharf', cat: 'food', dur: '1.5 hrs', cost: 2500, desc: 'Iconic riverside restaurant serving Goan-Portuguese cuisine.' },
+  ]},
+  { day: 2, date: 'Tue, 16 Dec', weather: '\u26C5 30\u00B0C', activities: [
+    { time: '07:00', name: 'Beach Yoga Session', cat: 'relax', dur: '1 hr', cost: 500, desc: 'Start your day with yoga on the beach as the sun rises.' },
+    { time: '09:00', name: 'Breakfast at Cafe Chocolatti', cat: 'food', dur: '45 min', cost: 800, desc: 'European-style cafe in Assagao known for its chocolate indulgence.' },
+    { time: '10:00', name: 'Anjuna Flea Market Shopping', cat: 'shop', dur: '2 hrs', cost: 3000, desc: 'Browse hippie stalls for jewelry, clothes, artifacts, and souvenirs.' },
+    { time: '12:30', name: 'Chapora Fort Viewpoint', cat: 'sight', dur: '1 hr', cost: 0, desc: 'Famous for Dil Chahta Hai views. Panoramic vistas of Vagator beach.' },
+    { time: '14:00', name: 'Lunch at Gunpowder', cat: 'food', dur: '1 hr', cost: 1500, desc: 'Award-winning South Indian fusion in a garden setting.' },
+    { time: '16:00', name: 'Spice Plantation Tour', cat: 'adv', dur: '2 hrs', cost: 1000, desc: 'Guided tour of a Goan spice plantation with traditional welcome.' },
+    { time: '20:00', name: 'Tito\'s Nightclub Experience', cat: 'food', dur: '3 hrs', cost: 2000, desc: 'Experience Goa\'s most famous nightclub on Baga beach.' },
+  ]},
+  { day: 3, date: 'Wed, 17 Dec', weather: '\u2600\uFE0F 33\u00B0C', activities: [
+    { time: '08:00', name: 'Breakfast at Hotel', cat: 'food', dur: '30 min', cost: 0, desc: 'Complimentary breakfast at the resort.' },
+    { time: '09:00', name: 'Dudhsagar Waterfalls Trek', cat: 'adv', dur: '4 hrs', cost: 2500, desc: 'Jeep safari + trek to one of India\'s tallest waterfalls. Pack swimwear!' },
+    { time: '13:30', name: 'Lunch at Jungle Cafe', cat: 'food', dur: '1 hr', cost: 1000, desc: 'Traditional Goan thali near the waterfall base.' },
+    { time: '15:30', name: 'Old Goa Church Visit', cat: 'sight', dur: '1.5 hrs', cost: 0, desc: 'Visit Basilica of Bom Jesus & Se Cathedral — UNESCO World Heritage sites.' },
+    { time: '17:30', name: 'Miramar Beach Sunset', cat: 'relax', dur: '1 hr', cost: 0, desc: 'Relax at the capital city\'s beach and watch the sunset.' },
+    { time: '20:00', name: 'Farewell Dinner at A Reverie', cat: 'food', dur: '2 hrs', cost: 3500, desc: 'Fine dining at a luxury restaurant in Assagao — perfect end to the trip.' },
+  ]},
+];
+
+const BUDGET_DATA = {
+  flights: { amount: 12000, color: '#FF6B6B', label: 'Flights' },
+  hotels: { amount: 18000, color: '#F0A500', label: 'Hotels' },
+  food: { amount: 9000, color: '#4ADE80', label: 'Food' },
+  activities: { amount: 8000, color: '#818CF8', label: 'Activities' },
+  transport: { amount: 4000, color: '#C084FC', label: 'Transport' },
+  shopping: { amount: 5000, color: '#FB923C', label: 'Shopping' },
+  misc: { amount: 2000, color: '#A78BFA', label: 'Misc' },
+};
+
+const GOA_HOTELS = [
+  { name: 'Taj Fort Aguada Resort', stars: 5, location: 'Candolim', price: 8500, amenities: ['Pool', 'Spa', 'Beach Access', 'Fine Dining'] },
+  { name: 'W Goa', stars: 5, location: 'Vagator', price: 12000, amenities: ['Pool', 'Gym', 'Bar', 'Water Sports'] },
+  { name: 'Alila Diwa Goa', stars: 5, location: 'Majorda', price: 9500, amenities: ['Pool', 'Spa', 'Yoga', 'Restaurant'] },
+  { name: 'Sterling Goa', stars: 4, location: 'Calangute', price: 4500, amenities: ['Pool', 'Kids Club', 'Restaurant'] },
+  { name: 'Resort Rio', stars: 3, location: 'Baga', price: 2800, amenities: ['Pool', 'Bar', 'Beach Access'] },
+  { name: 'Zostel Goa', stars: 2, location: 'Anjuna', price: 1200, amenities: ['Dorm', 'Cafe', 'Common Room'] },
+];
+
+const GOA_FLIGHTS = [
+  { airline: 'IndiGo', dep: 'BLR', arr: 'GOI', depTime: '06:30', arrTime: '08:15', dur: '1h 45m', stops: 'Direct', price: 4200 },
+  { airline: 'SpiceJet', dep: 'BLR', arr: 'GOI', depTime: '14:20', arrTime: '16:05', dur: '1h 45m', stops: 'Direct', price: 3800 },
+  { airline: 'Akasa Air', dep: 'BLR', arr: 'GOI', depTime: '09:45', arrTime: '11:30', dur: '1h 45m', stops: 'Direct', price: 5100 },
+  { airline: 'Vistara', dep: 'BLR', arr: 'GOI', depTime: '11:00', arrTime: '13:15', dur: '2h 15m', stops: '1 stop', price: 3500 },
+  { airline: 'Air India', dep: 'DEL', arr: 'GOI', depTime: '05:50', arrTime: '08:40', dur: '2h 50m', stops: 'Direct', price: 6500 },
+  { airline: 'Go First', dep: 'DEL', arr: 'GOI', depTime: '15:30', arrTime: '18:15', dur: '2h 45m', stops: 'Direct', price: 5500 },
+];
+
+const CHECKLIST_DATA = {
+  Clothing: ['T-shirts (4-5)', 'Shorts & skirts', 'Beachwear / Swimsuits', 'Light cotton dresses', 'Flip-flops & sandals', 'Sun hat', 'Sunglasses'],
+  Toiletries: ['Sunscreen SPF 50+', 'Insect repellent', 'Aloe vera gel', 'Shampoo & conditioner', 'Lip balm with SPF', 'Wet wipes'],
+  Documents: ['Flight tickets (print + digital)', 'Hotel booking confirmations', 'Government ID (Aadhaar/PAN)', 'Travel insurance', 'Emergency contacts list'],
+  Gadgets: ['Phone + charger', 'Power bank', 'Waterproof phone pouch', 'Bluetooth speaker', 'Camera / GoPro', 'Headphones'],
+  Medicines: ['Basic first-aid kit', 'Pain relievers', 'Antacids', 'Motion sickness pills', 'ORS packets', 'Band-aids'],
+  Misc: ['Reusable water bottle', 'Dry bag', 'Tote bag for shopping', 'Portable book / Kindle', 'Playing cards', 'Snacks for journey'],
+};
+
+const TIPS_DATA = [
+  { icon: '\uD83D\uDCC5', title: 'Best Time to Visit', text: 'November to February is ideal with pleasant weather (20-32\u00B0C). March-May is hot, June-September is monsoon with lush greenery.' },
+  { icon: '\uD83C\uDFDB\uFE0F', title: 'Local Customs', text: 'Goans are warm and welcoming. Dress modestly at churches. Always remove footwear before entering temples. Tipping 10% at restaurants is appreciated.' },
+  { icon: '\uD83D\uDEE1\uFE0F', title: 'Safety Tips', text: 'Avoid isolated beaches after dark. Use registered taxis or app-based cabs. Keep valuables in hotel safe. Beware of beach touts selling "special" tours.' },
+  { icon: '\uD83C\uDFE6', title: 'ATMs & Currency', text: 'ATMs widely available in towns. Carry some cash for beach shacks. Cards accepted at most restaurants and hotels. Notify bank before traveling.' },
+  { icon: '\uD83D\uDCD6', title: 'Local Phrases', text: '"Deu boro dis" (Good morning), "Mhaka help kor" (Help me), "Kityak?" (How much?), "Sukh dis" (Good day) in Konkani.' },
+  { icon: '\uD83C\uDF7D\uFE0F', title: 'Must-Try Foods', text: 'Goan Fish Curry, Prawn Balch\u00E3o, Sorpotel, Bebinca, Feni (local liquor), Goan sausages, and Cafreal chicken.' },
+];
+
+/* ============ DONUT CHART COMPONENT ============ */
+function DonutChart({ data, size = 180, thickness = 25 }) {
+  const cx = size / 2, cy = size / 2, r = cx - thickness / 2;
+  const total = Object.values(data).reduce((s, d) => s + d.amount, 0);
+  const circumference = 2 * Math.PI * r;
+  let offset = 0;
+  const segments = Object.entries(data).map(([key, d]) => {
+    const pct = d.amount / total;
+    const len = pct * circumference;
+    const seg = { key, ...d, pct, len, offset, color: d.color };
+    offset += len;
+    return seg;
+  });
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)' }}>
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(240,165,0,0.05)" strokeWidth={thickness} />
+      {segments.map(s => (
+        <circle key={s.key} cx={cx} cy={cy} r={r} fill="none" stroke={s.color} strokeWidth={thickness}
+          strokeDasharray={`${s.len} ${circumference - s.len}`} strokeDashoffset={-s.offset}
+          strokeLinecap="round" style={{ transition: 'stroke-dasharray 0.8s ease' }}
+        />
+      ))}
+      <text x={cx} y={cy - 6} textAnchor="middle" fill="#FDF6EC" fontSize="18" fontWeight="700" transform="rotate(90, 180, 180)">
+        {INR(total)}
+      </text>
+      <text x={cx} y={cy + 14} textAnchor="middle" fill="rgba(253,246,236,0.4)" fontSize="11" transform="rotate(90, 180, 180)">
+        Total Budget
+      </text>
+    </svg>
+  );
+}
+
+/* ============ MAIN APP ============ */
+function App() {
+  const [activeSection, setActiveSection] = useState('hero');
+  const [chatMessages, setChatMessages] = useState([
+    { role: 'assistant', content: 'Namaste! \uD83D\uDE4F I\'m YatraBot, your Indian travel concierge. Where shall we plan your next adventure? Try asking about Goa, Manali, or Kerala!' }
+  ]);
+  const [chatInput, setChatInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [isMobileChat, setIsMobileChat] = useState(false);
+  const [apiKey, setApiKey] = useState(localStorage.getItem('yatraai_anthropic_key') || '');
+  const [expenses, setExpenses] = useState([
+    { id: 1, date: '15 Dec', cat: 'Food', desc: 'Beach lunch at Calangute', amount: 1200 },
+    { id: 2, date: '15 Dec', cat: 'Activities', desc: 'Sunset Cruise', amount: 1800 },
+    { id: 3, date: '16 Dec', cat: 'Shopping', desc: 'Anjuna flea market', amount: 3000 },
+    { id: 4, date: '16 Dec', cat: 'Food', desc: 'Dinner at Gunpowder', amount: 1500 },
+    { id: 5, date: '17 Dec', cat: 'Activities', desc: 'Dudhsagar trek', amount: 2500 },
+  ]);
+  const [newExpense, setNewExpense] = useState({ date: '', cat: '', desc: '', amount: '' });
+  const [checklist, setChecklist] = useState(() => {
+    const items = {};
+    Object.entries(CHECKLIST_DATA).forEach(([cat, list]) => {
+      items[cat] = list.map(name => ({ name, checked: false }));
+    });
+    return items;
+  });
+  const [hotelFilter, setHotelFilter] = useState('all');
+  const [flightFilter, setFlightFilter] = useState('cheapest');
+  const [showBudget, setShowBudget] = useState(false);
+  const chatEndRef = useRef(null);
+
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [chatMessages, isTyping]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const sections = ['hero', 'itinerary', 'budget', 'hotels', 'flights', 'checklist', 'tips'];
+      for (const id of sections.reverse()) {
+        const el = document.getElementById(id);
+        if (el && el.getBoundingClientRect().top < 300) { setActiveSection(id); break; }
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const handleApiKeyChange = (e) => {
+    const val = e.target.value;
+    setApiKey(val);
+    localStorage.setItem('yatraai_anthropic_key', val);
+  };
+
+  const scrollTo = (id) => {
+    setActiveSection(id);
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const getFormattedCost = (cost) => cost > 0 ? INR(cost) : 'Free';
+
+  const handleChatSend = async (text) => {
+    const msg = text || chatInput;
+    if (!msg.trim()) return;
+    const userMsg = { role: 'user', content: msg.trim() };
+    const updated = [...chatMessages, userMsg];
+    setChatMessages(updated);
+    setChatInput('');
+    setIsTyping(true);
+    try {
+      const key = apiKey || prompt('Enter your Anthropic API key to chat with YatraBot:');
+      if (!key) { setIsTyping(false); return; }
+      if (!apiKey && key) { setApiKey(key); localStorage.setItem('yatraai_anthropic_key', key); }
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 800,
+          system: 'You are YatraBot, a friendly and expert Indian travel concierge. You specialize in travel within India. Always provide costs in INR (\u20B9) using Indian number formatting (e.g. \u20B91,50,000). Give specific, actionable advice. Be warm, enthusiastic, and concise. Use relevant emojis. When suggesting budgets, break them down per person.',
+          messages: updated.map(m => ({ role: m.role, content: m.content }))
+        })
+      });
+      if (!res.ok) throw new Error(`API error: ${res.status}`);
+      const data = await res.json();
+      const reply = data.content?.[0]?.text || 'Sorry, I couldn\'t process that. Please try again!';
+      setChatMessages(prev => [...prev, { role: 'assistant', content: reply }]);
+    } catch (err) {
+      setChatMessages(prev => [...prev, { role: 'assistant', content: 'I\'m having trouble connecting right now. Please check your API key and try again. \uD83D\uDE4F' }]);
+    } finally { setIsTyping(false); }
+  };
+
+  const quickPrompts = [
+    'Best time to visit Goa \uD83C\uDF34',
+    'Budget trip for 2 in Manali \u2744\uFE0F',
+    'What to pack for Kerala monsoon \uD83C\uDF27\uFE0F',
+    'Cheapest flights from Bangalore \uD83D\uDEEB\uFE0F',
+    'Street food must-tries in Varanasi \uD83C\uDF5B',
+  ];
+
+  const totalChecked = Object.values(checklist).flat().filter(i => i.checked).length;
+  const totalItems = Object.values(checklist).flat().length;
+
+  const totalBudget = Object.values(BUDGET_DATA).reduce((s, d) => s + d.amount, 0);
+  const totalSpent = expenses.reduce((s, e) => s + e.amount, 0);
+  const budgetPct = Math.min(100, (totalSpent / totalBudget) * 100);
+  const health = totalSpent <= totalBudget * 0.85 ? 'green' : totalSpent <= totalBudget ? 'yellow' : 'red';
+  const healthLabel = totalSpent <= totalBudget * 0.85 ? 'Under Budget \uD83D\uDFE2' : totalSpent <= totalBudget ? 'On Track \uD83D\uDFE1' : 'Over Budget \uD83D\uDD34';
+
+  const addExpense = () => {
+    if (!newExpense.desc || !newExpense.amount) return;
+    setExpenses(prev => [...prev, { ...newExpense, id: Date.now(), amount: Number(newExpense.amount) }]);
+    setNewExpense({ date: '', cat: '', desc: '', amount: '' });
+  };
+
+  const deleteExpense = (id) => setExpenses(prev => prev.filter(e => e.id !== id));
+
+  const toggleChecklist = (cat, idx) => {
+    setChecklist(prev => ({
+      ...prev,
+      [cat]: prev[cat].map((item, i) => i === idx ? { ...item, checked: !item.checked } : item)
+    }));
+  };
+
+  const exportCSV = () => {
+    const header = 'Date,Category,Description,Amount (INR)\n';
+    const rows = expenses.map(e => `${e.date},${e.cat},"${e.desc}",${e.amount}`).join('\n');
+    const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'yatraai-budget.csv'; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const filteredHotels = GOA_HOTELS.filter(h => {
+    if (hotelFilter === 'budget') return h.price <= 2000;
+    if (hotelFilter === 'mid') return h.price > 2000 && h.price <= 6000;
+    if (hotelFilter === 'luxury') return h.price > 6000;
+    return true;
+  });
+
+  const sortedFlights = [...GOA_FLIGHTS].sort((a, b) => {
+    if (flightFilter === 'cheapest') return a.price - b.price;
+    if (flightFilter === 'fastest') {
+      const durA = parseInt(a.dur), durB = parseInt(b.dur);
+      return durA - durB;
+    }
+    return 0;
+  });
+  const filteredFlights = flightFilter === 'direct' ? sortedFlights.filter(f => f.stops === 'Direct') : sortedFlights;
+
+  const renderStars = (n) => '\u2605'.repeat(n);
+
+  return (
+    <div className="app">
+      <div className="bg-orbs"><div className="orb"></div><div className="orb"></div><div className="orb"></div></div>
+
+      {/* === NAVBAR === */}
+      <nav className="navbar">
+        <div className="navbar-logo"><span>\u2708\uFE0F</span> YatraAI</div>
+        <div className="navbar-links">
+          {['hero','itinerary','budget','hotels','flights','checklist','tips'].map(s => (
+            <button key={s} className={activeSection === s ? 'active' : ''} onClick={() => scrollTo(s)}>
+              {s === 'hero' ? 'Plan Trip' : s.charAt(0).toUpperCase() + s.slice(1)}
+            </button>
+          ))}
+        </div>
+      </nav>
+
+      {/* === LAYOUT === */}
+      <div className="layout">
+        <div className="main-content">
+          {/* ========== HERO ========== */}
+          <section id="hero">
+            <div className="hero">
+              <div className="hero-content">
+                <h1>Your Indian Adventure<br/>Begins <span className="gold">Here</span></h1>
+                <p>Tell us where you want to go, and YatraAI will craft the perfect Indian itinerary \u2014 with costs, activities, and local tips.</p>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>From</label>
+                    <select defaultValue="BLR">
+                      <option value="DEL">Delhi</option>
+                      <option value="BOM">Mumbai</option>
+                      <option value="BLR">Bangalore</option>
+                      <option value="MAA">Chennai</option>
+                      <option value="CCU">Kolkata</option>
+                      <option value="HYD">Hyderabad</option>
+                      <option value="PNQ">Pune</option>
+                      <option value="AMD">Ahmedabad</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Destination</label>
+                    <input type="text" defaultValue="Goa" placeholder="e.g. Goa, Manali, Kerala" />
+                  </div>
+                </div>
+                <div className="form-row" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
+                  <div className="form-group">
+                    <label>Check-in</label>
+                    <input type="date" defaultValue="2025-12-15" />
+                  </div>
+                  <div className="form-group">
+                    <label>Check-out</label>
+                    <input type="date" defaultValue="2025-12-17" />
+                  </div>
+                  <div className="form-group">
+                    <label>Travelers</label>
+                    <select defaultValue="2">
+                      <option value="1">1 Adult</option>
+                      <option value="2">2 Adults</option>
+                      <option value="3">3 Adults</option>
+                      <option value="4">4 Adults</option>
+                      <option value="5">5+ Adults</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="form-group" style={{ marginBottom: 12 }}>
+                  <label>Popular Destinations</label>
+                  <div className="chips-row" style={{ marginBottom: 0 }}>
+                    {['Goa','Manali','Kerala','Rajasthan','Andaman','Leh-Ladakh','Varanasi','Ooty'].map(d => (
+                      <button key={d} className={'chip' + (d === 'Goa' ? ' active' : '')} onClick={() => {}}>{d}</button>
+                    ))}
+                  </div>
+                </div>
+                <div className="form-group" style={{ marginBottom: 12 }}>
+                  <label>Trip Type</label>
+                  <div className="trip-type-row" style={{ marginBottom: 0 }}>
+                    {['Adventure','Family','Honeymoon','Solo','Group','Budget','Luxury'].map(t => (
+                      <button key={t} className={'trip-type-btn' + (t === 'Adventure' ? ' active' : '')} onClick={() => {}}>{t}</button>
+                    ))}
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label>Budget: <span className="text-gold">{INR(85000)}</span></label>
+                  <div className="budget-slider-row" style={{ marginBottom: 0 }}>
+                    <span className="text-muted" style={{fontSize:12}}>{INR(5000)}</span>
+                    <input type="range" className="budget-slider" min={5000} max={500000} step={5000} defaultValue={85000} />
+                    <span className="text-muted" style={{fontSize:12}}>{INR(500000)}</span>
+                  </div>
+                </div>
+                <button className="cta-btn" onClick={() => scrollTo('itinerary')}>
+                  Plan My Trip \u2708\uFE0F
+                </button>
+              </div>
+            </div>
+          </section>
+
+          {/* ========== ITINERARY ========== */}
+          <section id="itinerary">
+            <div className="section-divider" />
+            <h2 className="section-title">Your Goa Itinerary</h2>
+            <p className="section-subtitle">3 days of sun, sea, and spice \u2014 crafted just for you</p>
+            <div className="timeline">
+              {GOA_ITINERARY.map(day => (
+                <div key={day.day} className="day-card">
+                  <div className="day-card-header">
+                    <h4><span className="day-number">{day.day}</span> Day {day.day} &mdash; {day.date}</h4>
+                    <span className="weather-badge">{day.weather}</span>
+                  </div>
+                  {day.activities.map((act, i) => (
+                    <div key={i} className="activity">
+                      <div className="activity-row">
+                        <div className="activity-time">{act.time}</div>
+                        <div className="activity-content">
+                          <div className="activity-name">
+                            {act.name}
+                            {act.dur && <span className="activity-dur">\u23F0 {act.dur}</span>}
+                            <span className={'activity-cat ' + act.cat}>
+                              {act.cat === 'food' ? 'Food' : act.cat === 'sight' ? 'Sight' : act.cat === 'adv' ? 'Adventure' : act.cat === 'shop' ? 'Shopping' : 'Relax'}
+                            </span>
+                          </div>
+                          <div className="activity-desc">{act.desc}</div>
+                          <div className="activity-cost">{getFormattedCost(act.cost)}</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* ========== BUDGET ========== */}
+          <section id="budget">
+            <div className="section-divider" />
+            <div className="flex items-center justify-between" style={{ marginBottom: 8 }}>
+              <h2 className="section-title" style={{ marginBottom: 0 }}>Budget Analyzer</h2>
+              <div className="flex gap-2">
+                <button className="btn-sm gold" onClick={exportCSV}>Export CSV</button>
+              </div>
+            </div>
+            <p className="section-subtitle">Track every rupee of your Goa trip</p>
+            <div className="budget-grid">
+              <div className="glass-card">
+                <div className="chart-container">
+                  <DonutChart data={BUDGET_DATA} />
+                  <div className="budget-health" style={{ marginTop: 16 }} className={'budget-health ' + health}>{healthLabel}</div>
+                  <div style={{ width: '100%', marginTop: 12 }}>
+                    <div className="flex justify-between text-muted" style={{ fontSize: 12, marginBottom: 4 }}>
+                      <span>Spent: {INR(totalSpent)}</span>
+                      <span>Budget: {INR(totalBudget)}</span>
+                    </div>
+                    <div className="progress-track">
+                      <div className="progress-fill" style={{ width: budgetPct + '%' }} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="glass-card">
+                <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, fontWeight: 700, marginBottom: 16 }}>Cost Breakdown</h3>
+                {Object.entries(BUDGET_DATA).map(([key, d]) => (
+                  <div key={key} className="budget-row">
+                    <span className="budget-row-label"><span className="budget-dot" style={{ background: d.color }} /> {d.label}</span>
+                    <span className="budget-row-val">{INR(d.amount)}</span>
+                  </div>
+                ))}
+                <div className="budget-row" style={{ borderTop: '1px solid rgba(240,165,0,0.1)', paddingTop: 10, marginTop: 4 }}>
+                  <span className="budget-row-label" style={{ fontWeight: 700, color: '#FDF6EC' }}>Total</span>
+                  <span className="budget-row-val" style={{ color: '#F0A500', fontSize: 18 }}>{INR(totalBudget)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="glass-card" style={{ marginTop: 20 }}>
+              <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
+                <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 17, fontWeight: 700 }}>Expense Log</h3>
+                <span className="text-muted" style={{ fontSize: 12 }}>{expenses.length} entries</span>
+              </div>
+              <table className="expense-table">
+                <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th></th></tr></thead>
+                <tbody>
+                  {expenses.map(e => (
+                    <tr key={e.id}>
+                      <td>{e.date}</td><td>{e.cat}</td><td>{e.desc}</td>
+                      <td className="amount">{INR(e.amount)}</td>
+                      <td><button className="btn-sm danger" onClick={() => deleteExpense(e.id)}>\u2715</button></td>
+                    </tr>
+                  ))}
+                  <tr>
+                    <td><input className="expense-input" placeholder="Date" value={newExpense.date} onChange={e => setNewExpense(p => ({...p, date: e.target.value}))} style={{width:70}} /></td>
+                    <td><input className="expense-input" placeholder="Category" value={newExpense.cat} onChange={e => setNewExpense(p => ({...p, cat: e.target.value}))} style={{width:90}} /></td>
+                    <td><input className="expense-input" placeholder="Description" value={newExpense.desc} onChange={e => setNewExpense(p => ({...p, desc: e.target.value}))} /></td>
+                    <td><input className="expense-input" placeholder="Amount" type="number" value={newExpense.amount} onChange={e => setNewExpense(p => ({...p, amount: e.target.value}))} style={{width:90}} /></td>
+                    <td><button className="btn-sm gold" onClick={addExpense}>+</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          {/* ========== HOTELS ========== */}
+          <section id="hotels">
+            <div className="section-divider" />
+            <h2 className="section-title">Hotels in Goa</h2>
+            <p className="section-subtitle">From beachside hostels to luxury resorts</p>
+            <div className="filter-bar">
+              {[{key:'all',label:'All'},{key:'budget',label:'Budget \u20B9'},{key:'mid',label:'Mid-Range \u20B9\u20B9'},{key:'luxury',label:'Luxury \u20B9\u20B9\u20B9'}].map(f => (
+                <button key={f.key} className={'btn-sm ' + (hotelFilter === f.key ? 'gold' : 'outline')} onClick={() => setHotelFilter(f.key)}>{f.label}</button>
+              ))}
+            </div>
+            <div className="hotel-grid">
+              {filteredHotels.map((h, i) => (
+                <div key={i} className="hotel-card">
+                  <div className="hotel-name">{h.name}</div>
+                  <div className="hotel-stars">{renderStars(h.stars)}</div>
+                  <div className="hotel-location">{h.location}</div>
+                  <div className="hotel-amenities">{h.amenities.map((a, j) => <span key={j} className="hotel-amenity">{a}</span>)}</div>
+                  <div className="hotel-price">{INR(h.price)} <span>/ night</span></div>
+                  <button className="btn-sm gold" style={{ width: '100%' }}>Book Now</button>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* ========== FLIGHTS ========== */}
+          <section id="flights">
+            <div className="section-divider" />
+            <h2 className="section-title">Flights to Goa</h2>
+            <p className="section-subtitle">Find the best deals from your city</p>
+            <div className="filter-bar">
+              {[{key:'cheapest',label:'Cheapest'},{key:'fastest',label:'Fastest'},{key:'direct',label:'Non-Stop'}].map(f => (
+                <button key={f.key} className={'btn-sm ' + (flightFilter === f.key ? 'gold' : 'outline')} onClick={() => setFlightFilter(f.key)}>{f.label}</button>
+              ))}
+            </div>
+            {filteredFlights.map((f, i) => (
+              <div key={i} className="flight-card">
+                <div className="flight-row">
+                  <div className="flight-airline">{f.airline}</div>
+                  <div>
+                    <div className="flight-time">{f.depTime}</div>
+                    <div className="text-muted" style={{ fontSize: 11 }}>{f.dep}</div>
+                  </div>
+                  <div style={{ textAlign: 'center', padding: '0 8px' }}>
+                    <div className="flight-dur">{f.dur}</div>
+                    <div style={{ width: 40, height: 1, background: 'rgba(240,165,0,0.2)', margin: '4px auto' }} />
+                    <span className={'flight-stops ' + (f.stops === 'Direct' ? 'direct' : 'onestop')}>{f.stops}</span>
+                  </div>
+                  <div>
+                    <div className="flight-time">{f.arrTime}</div>
+                    <div className="text-muted" style={{ fontSize: 11 }}>{f.arr}</div>
+                  </div>
+                  <div className="flight-price">{INR(f.price)} <span style={{fontSize:12,fontWeight:400,color:'rgba(253,246,236,0.35)'}}>pp</span></div>
+                  <button className="btn-sm gold">Select</button>
+                </div>
+              </div>
+            ))}
+          </section>
+
+          {/* ========== CHECKLIST ========== */}
+          <section id="checklist">
+            <div className="section-divider" />
+            <div className="flex items-center justify-between" style={{ marginBottom: 8 }}>
+              <h2 className="section-title" style={{ marginBottom: 0 }}>Packing Checklist</h2>
+              <button className="btn-sm outline" onClick={() => {
+                const blob = new Blob(['YatraAI Packing List\n' + Object.entries(checklist).map(([cat, items]) => '\n' + cat + ':\n' + items.map(i => (i.checked ? '[\u2713]' : '[ ]') + ' ' + i.name).join('\n')).join('')], {type:'text/plain'});
+                const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'yatraai-checklist.txt'; a.click();
+              }}>Download List</button>
+            </div>
+            <p className="section-subtitle">Pack smart for your Goa beach trip</p>
+            <div className="checklist-progress">
+              <div className="checklist-progress-text">
+                <span>{totalChecked} of {totalItems} items packed</span>
+                <span>{Math.round(totalChecked/totalItems*100)}%</span>
+              </div>
+              <div className="progress-track"><div className="progress-fill" style={{ width: (totalChecked/totalItems*100) + '%' }} /></div>
+            </div>
+            <div className="checklist-categories">
+              {Object.entries(checklist).map(([cat, items]) => (
+                <div key={cat} className="checklist-cat">
+                  <h4>{cat}</h4>
+                  {items.map((item, idx) => (
+                    <label key={idx} className={'checklist-item' + (item.checked ? ' checked' : '')}>
+                      <input type="checkbox" checked={item.checked} onChange={() => toggleChecklist(cat, idx)} />
+                      {item.name}
+                    </label>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* ========== TIPS ========== */}
+          <section id="tips">
+            <div className="section-divider" />
+            <h2 className="section-title">Goa Travel Guide</h2>
+            <p className="section-subtitle">Everything you need to know before you go</p>
+            <div className="tips-grid">
+              {TIPS_DATA.map((t, i) => (
+                <div key={i} className="tip-card">
+                  <span className="tip-icon">{t.icon}</span>
+                  <h4>{t.title}</h4>
+                  <p>{t.text}</p>
+                </div>
+              ))}
+              <div className="tip-card" style={{ gridColumn: '1 / -1' }}>
+                <span className="tip-icon">\uD83D\uDE91</span>
+                <h4>Emergency Numbers</h4>
+                <div className="emergency-numbers">
+                  <div className="emergency-item"><div className="label">Police</div><div className="number">100</div></div>
+                  <div className="emergency-item"><div className="label">Ambulance</div><div className="number">108</div></div>
+                  <div className="emergency-item"><div className="label">Fire</div><div className="number">101</div></div>
+                  <div className="emergency-item"><div className="label">Tourist Helpline</div><div className="number" style={{fontSize:14}}>1800-11-1363</div></div>
+                  <div className="emergency-item"><div className="label">Women's Helpline</div><div className="number">1091</div></div>
+                  <div className="emergency-item"><div className="label">Goa Police</div><div className="number">112</div></div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        {/* === CHAT PANEL === */}
+        <div className="chat-panel">
+          <div className="chat-header">
+            <span className="chat-dot" />
+            <h3>YatraBot \uD83E\uDD16</h3>
+            <div className="chat-header-actions">
+              <input className="api-key-input" type="password" placeholder="API Key" value={apiKey} onChange={handleApiKeyChange} />
+            </div>
+          </div>
+          <div className="chat-messages">
+            {chatMessages.map((msg, i) => (
+              <div key={i} className={'chat-msg ' + msg.role}>
+                <div className="chat-bubble">{msg.content}</div>
+              </div>
+            ))}
+            {isTyping && (
+              <div className="chat-msg bot">
+                <div className="chat-bubble"><div className="chat-typing"><span /><span /><span /></div></div>
+              </div>
+            )}
+            <div ref={chatEndRef} />
+          </div>
+          <div className="chat-suggestions">
+            {quickPrompts.map((q, i) => (
+              <button key={i} className="chat-suggestion-chip" onClick={() => handleChatSend(q)}>{q}</button>
+            ))}
+          </div>
+          <div className="chat-input-bar">
+            <textarea className="chat-input" placeholder="Ask YatraBot..." value={chatInput}
+              onChange={e => setChatInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleChatSend(); } }}
+              rows={1} />
+            <button className="chat-send" onClick={() => handleChatSend()} disabled={isTyping || !chatInput.trim()}>
+              \u27A4
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* === MOBILE CHAT === */}
+      <button className="mobile-chat-btn" onClick={() => setIsMobileChat(true)}>\uD83D\uDCAC</button>
+      {isMobileChat && (
+        <div className="mobile-chat-overlay">
+          <div className="chat-header">
+            <span className="chat-dot" />
+            <h3>YatraBot \uD83E\uDD16</h3>
+            <button className="mobile-chat-close" onClick={() => setIsMobileChat(false)}>\u2715</button>
+          </div>
+          <div className="chat-messages" style={{flex:1}}>
+            {chatMessages.map((msg, i) => (
+              <div key={i} className={'chat-msg ' + msg.role}>
+                <div className="chat-bubble">{msg.content}</div>
+              </div>
+            ))}
+            {isTyping && (
+              <div className="chat-msg bot">
+                <div className="chat-bubble"><div className="chat-typing"><span /><span /><span /></div></div>
+              </div>
+            )}
+            <div ref={chatEndRef} />
+          </div>
+          <div className="chat-suggestions">
+            {quickPrompts.map((q, i) => (
+              <button key={i} className="chat-suggestion-chip" onClick={() => { setIsMobileChat(false); handleChatSend(q); }}>{q}</button>
+            ))}
+          </div>
+          <div className="chat-input-bar" style={{borderBottom: 'none'}}>
+            <textarea className="chat-input" placeholder="Ask YatraBot..." value={chatInput}
+              onChange={e => setChatInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleChatSend(); } }}
+              rows={1} />
+            <button className="chat-send" onClick={() => handleChatSend()} disabled={isTyping || !chatInput.trim()}>
+              \u27A4
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ============ RENDER ============ */
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+</script>
+</body>
+</html>

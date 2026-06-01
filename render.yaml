@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: ai-travel-planner-api
+    runtime: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    rootDir: backend
+    envVars:
+      - key: DATABASE_URL
+        value: sqlite:///./travel_planner.db
+      - key: GROQ_API_KEY
+        sync: false
+      - key: SECRET_KEY
+        sync: false
+      - key: USE_MOCK
+        value: "false"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: UNSPLASH_ACCESS_KEY
+        sync: false
+
+  - type: static
+    name: ai-travel-planner-ui
+    runtime: static
+    region: oregon
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: frontend/dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://ai-travel-planner-api-37dv.onrender.com/api
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
