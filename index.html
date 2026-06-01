@@ -1,0 +1,1372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YatraAI — Your Personal Indian Travel Concierge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: #0A0F2C;
+  color: #FDF6EC;
+  overflow-x: hidden;
+}
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #0A0F2C; }
+::-webkit-scrollbar-thumb { background: #F0A500; border-radius: 3px; }
+::selection { background: #F0A500; color: #0A0F2C; }
+
+h1, h2, h3, h4, h5, h6 { font-family: 'Playfair Display', serif; }
+a { text-decoration: none; color: inherit; }
+input, select, button, textarea { font-family: 'DM Sans', sans-serif; outline: none; }
+
+/* ── ANIMATED ORBS ── */
+.orbs {
+  position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 0;
+}
+.orb {
+  position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.15;
+  animation: orbFloat 20s ease-in-out infinite;
+}
+.orb:nth-child(1) { width: 600px; height: 600px; background: #F0A500; top: -10%; left: -5%; animation-delay: 0s; }
+.orb:nth-child(2) { width: 500px; height: 500px; background: #FF6B6B; bottom: -10%; right: -5%; animation-delay: -7s; }
+.orb:nth-child(3) { width: 400px; height: 400px; background: #F0A500; bottom: 30%; right: 30%; animation-delay: -14s; }
+@keyframes orbFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(50px, -80px) scale(1.1); }
+  50% { transform: translate(-30px, 50px) scale(0.9); }
+  75% { transform: translate(40px, 30px) scale(1.05); }
+}
+
+/* ── LAYOUT ── */
+.app-wrapper {
+  display: flex; min-height: 100vh; position: relative; z-index: 1;
+}
+.main-content {
+  flex: 1; min-width: 0; padding-top: 72px;
+  transition: margin-right 0.3s ease;
+}
+.chat-open .main-content { margin-right: 360px; }
+
+/* ── NAVBAR ── */
+.navbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(10, 15, 44, 0.85);
+  backdrop-filter: blur(16px) saturate(1.2);
+  border-bottom: 1px solid rgba(240, 165, 0, 0.1);
+  padding: 0 32px; height: 72px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.navbar-logo {
+  font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 700;
+  color: #F0A500; display: flex; align-items: center; gap: 8px;
+}
+.navbar-links {
+  display: flex; gap: 4px; list-style: none; align-items: center;
+}
+.navbar-links a {
+  padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 500;
+  color: rgba(253, 246, 236, 0.6); transition: all 0.3s ease;
+  position: relative; letter-spacing: 0.3px;
+}
+.navbar-links a:hover, .navbar-links a.active {
+  color: #FDF6EC; background: rgba(240, 165, 0, 0.08);
+}
+.navbar-links a.active::after {
+  content: ''; position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
+  width: 16px; height: 3px; background: #F0A500; border-radius: 2px;
+}
+.mobile-menu-btn { display: none; background: none; border: none; color: #FDF6EC; font-size: 24px; cursor: pointer; }
+
+/* ── SECTIONS ── */
+.section {
+  padding: 80px 48px; max-width: 1100px; margin: 0 auto;
+  opacity: 0; transform: translateY(30px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.section.visible { opacity: 1; transform: translateY(0); }
+.section-header {
+  text-align: center; margin-bottom: 48px;
+}
+.section-header h2 {
+  font-size: 36px; font-weight: 700; color: #FDF6EC; margin-bottom: 8px;
+}
+.section-header p {
+  color: rgba(253, 246, 236, 0.5); font-size: 16px;
+}
+.gold-accent {
+  display: inline-block; width: 60px; height: 3px; background: #F0A500; border-radius: 2px; margin-top: 12px;
+}
+
+/* ── GLASS CARD ── */
+.glass {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.glass:hover {
+  border-color: rgba(240, 165, 0, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(240, 165, 0, 0.06);
+}
+
+/* ── HERO ── */
+.hero {
+  min-height: calc(100vh - 72px); display: flex; align-items: center; justify-content: center;
+  padding: 40px 48px; position: relative; overflow: hidden;
+}
+.hero-content { text-align: center; max-width: 800px; }
+.hero h1 {
+  font-size: 56px; font-weight: 800; color: #FDF6EC; margin-bottom: 12px;
+  background: linear-gradient(135deg, #FDF6EC 0%, #F0A500 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.hero-sub {
+  font-size: 18px; color: rgba(253, 246, 236, 0.6); margin-bottom: 40px;
+}
+
+/* ── FORM ── */
+.trip-form {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  background: rgba(255,255,255,0.04); backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.06); border-radius: 20px;
+  padding: 32px; text-align: left;
+}
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group.full { grid-column: 1 / -1; }
+.form-group label {
+  font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;
+  color: rgba(253, 246, 236, 0.5);
+}
+.form-group input, .form-group select {
+  padding: 12px 16px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(0,0,0,0.3); color: #FDF6EC; font-size: 14px;
+  transition: border-color 0.3s;
+}
+.form-group input:focus, .form-group select:focus { border-color: #F0A500; }
+.form-group select option { background: #0A0F2C; color: #FDF6EC; }
+
+.dest-chips {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px;
+}
+.dest-chip {
+  padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(240,165,0,0.2);
+  background: transparent; color: rgba(253,246,236,0.7); font-size: 12px; cursor: pointer;
+  transition: all 0.3s ease;
+}
+.dest-chip:hover, .dest-chip.active {
+  background: rgba(240,165,0,0.15); border-color: #F0A500; color: #F0A500;
+}
+
+.budget-display { font-size: 20px; font-weight: 700; color: #F0A500; }
+input[type="range"] {
+  -webkit-appearance: none; appearance: none; height: 6px; border-radius: 3px;
+  background: linear-gradient(90deg, #F0A500, #FF6B6B); border: none !important;
+  padding: 0 !important; cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%;
+  background: #F0A500; border: 3px solid #0A0F2C; cursor: pointer;
+  box-shadow: 0 0 10px rgba(240,165,0,0.3);
+}
+
+.cta-btn {
+  grid-column: 1 / -1; padding: 16px 32px; border: none; border-radius: 12px;
+  background: linear-gradient(135deg, #F0A500, #e09400); color: #0A0F2C;
+  font-size: 16px; font-weight: 700; cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  letter-spacing: 0.5px; display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.cta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(240,165,0,0.3); }
+.cta-btn:active { transform: scale(0.97); }
+
+/* ── ITINERARY ── */
+.itinerary-grid { display: flex; flex-direction: column; gap: 24px; }
+.day-card {
+  padding: 28px; position: relative;
+}
+.day-card-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 20px; padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.day-badge {
+  display: flex; align-items: center; gap: 12px;
+}
+.day-number {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: linear-gradient(135deg, #F0A500, #e09400);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 16px; color: #0A0F2C;
+}
+.day-date { font-size: 13px; color: rgba(253,246,236,0.4); }
+.weather-badge {
+  display: flex; align-items: center; gap: 6px; font-size: 14px; color: #F0A500;
+}
+.activities { display: flex; flex-direction: column; gap: 16px; }
+.activity-card {
+  display: flex; align-items: flex-start; gap: 16px;
+  background: rgba(255,255,255,0.02); border-radius: 12px; padding: 16px;
+  border-left: 3px solid;
+  transition: all 0.3s ease;
+}
+.activity-card:hover { background: rgba(255,255,255,0.04); }
+.activity-time {
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;
+  color: #F0A500; min-width: 80px; padding-top: 2px;
+}
+.activity-details { flex: 1; }
+.activity-details h4 { font-size: 15px; margin-bottom: 4px; }
+.activity-details p { font-size: 13px; color: rgba(253,246,236,0.5); line-height: 1.5; }
+.activity-meta {
+  display: flex; gap: 12px; margin-top: 8px; font-size: 12px;
+  color: rgba(253,246,236,0.4);
+}
+
+.add-activity-btn {
+  margin-top: 12px; padding: 10px 20px; border: 1px dashed rgba(240,165,0,0.3);
+  border-radius: 10px; background: transparent; color: #F0A500; font-size: 13px; cursor: pointer;
+  transition: all 0.3s; width: 100%;
+}
+.add-activity-btn:hover { background: rgba(240,165,0,0.06); border-color: #F0A500; }
+
+/* ── BUDGET ── */
+.budget-dashboard {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+}
+.budget-card {
+  padding: 28px;
+}
+.budget-card h3 { font-size: 18px; margin-bottom: 16px; }
+.budget-chart-container { height: 260px; }
+.budget-metrics { display: flex; gap: 16px; flex-wrap: wrap; }
+.budget-metric {
+  flex: 1; min-width: 120px; text-align: center; padding: 16px;
+  background: rgba(255,255,255,0.02); border-radius: 12px;
+}
+.budget-metric .value { font-size: 22px; font-weight: 700; color: #F0A500; }
+.budget-metric .label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: rgba(253,246,236,0.4); margin-top: 4px; }
+.progress-bar {
+  height: 8px; background: rgba(255,255,255,0.06); border-radius: 4px; overflow: hidden; margin: 12px 0;
+}
+.progress-fill {
+  height: 100%; border-radius: 4px; transition: width 0.6s ease;
+}
+.budget-health {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600;
+}
+
+.expense-table {
+  grid-column: 1 / -1;
+}
+.expense-table table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+}
+.expense-table th {
+  text-align: left; padding: 12px 8px; border-bottom: 1px solid rgba(255,255,255,0.06);
+  font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: rgba(253,246,236,0.4);
+}
+.expense-table td {
+  padding: 10px 8px; border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.expense-table input, .expense-table select {
+  background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px; padding: 6px 10px; color: #FDF6EC; font-size: 13px; width: 100%;
+}
+.add-row-btn, .export-btn {
+  padding: 10px 20px; border-radius: 10px; border: none; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.3s;
+}
+.add-row-btn { background: rgba(240,165,0,0.1); color: #F0A500; }
+.export-btn { background: linear-gradient(135deg, #F0A500, #e09400); color: #0A0F2C; margin-left: 12px; }
+.add-row-btn:hover { background: rgba(240,165,0,0.2); }
+.del-btn { background: none; border: none; color: #FF6B6B; cursor: pointer; font-size: 16px; }
+
+/* ── HOTELS ── */
+.hotel-filters {
+  display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap;
+}
+.hotel-filters button {
+  padding: 8px 18px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.08);
+  background: transparent; color: rgba(253,246,236,0.6); font-size: 13px; cursor: pointer;
+  transition: all 0.3s;
+}
+.hotel-filters button:hover, .hotel-filters button.active {
+  border-color: #F0A500; color: #F0A500; background: rgba(240,165,0,0.08);
+}
+.hotel-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;
+}
+.hotel-card {
+  padding: 24px;
+}
+.hotel-card .stars { color: #F0A500; font-size: 14px; margin-bottom: 4px; }
+.hotel-card h4 { font-size: 18px; margin-bottom: 4px; }
+.hotel-card .location { font-size: 12px; color: rgba(253,246,236,0.4); margin-bottom: 12px; }
+.hotel-amenities {
+  display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px;
+}
+.amenity-tag {
+  padding: 4px 10px; border-radius: 6px; background: rgba(255,255,255,0.04);
+  font-size: 11px; color: rgba(253,246,236,0.5);
+}
+.hotel-price { font-size: 20px; font-weight: 700; color: #F0A500; }
+.hotel-price span { font-size: 12px; font-weight: 400; color: rgba(253,246,236,0.4); }
+.book-btn {
+  margin-top: 12px; padding: 10px 24px; border: none; border-radius: 8px;
+  background: linear-gradient(135deg, #F0A500, #e09400); color: #0A0F2C;
+  font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.3s;
+}
+.book-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(240,165,0,0.2); }
+
+/* ── FLIGHTS ── */
+.flight-filters {
+  display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap;
+}
+.flight-filters button {
+  padding: 8px 18px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.08);
+  background: transparent; color: rgba(253,246,236,0.6); font-size: 13px; cursor: pointer;
+  transition: all 0.3s;
+}
+.flight-filters button:hover, .flight-filters button.active {
+  border-color: #F0A500; color: #F0A500; background: rgba(240,165,0,0.08);
+}
+.flight-list { display: flex; flex-direction: column; gap: 16px; }
+.flight-card {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 24px; flex-wrap: wrap; gap: 16px;
+}
+.flight-airline { display: flex; align-items: center; gap: 12px; }
+.flight-airline h4 { font-size: 16px; }
+.flight-airline .code { font-size: 11px; color: rgba(253,246,236,0.3); }
+.flight-route {
+  display: flex; align-items: center; gap: 16px;
+}
+.flight-route .time { font-size: 20px; font-weight: 700; }
+.flight-route .airport { font-size: 11px; color: rgba(253,246,236,0.4); text-align: center; }
+.flight-route .line {
+  width: 60px; height: 1px; background: linear-gradient(90deg, #F0A500, transparent); position: relative;
+}
+.flight-route .line::after {
+  content: '>'; position: absolute; right: 0; top: -7px; color: #F0A500; font-size: 12px;
+}
+.flight-details { text-align: right; }
+.flight-details .price { font-size: 20px; font-weight: 700; color: #F0A500; }
+.flight-details .stops { font-size: 11px; color: rgba(253,246,236,0.4); }
+.select-flight-btn {
+  padding: 10px 24px; border: none; border-radius: 8px;
+  background: rgba(240,165,0,0.1); color: #F0A500; font-weight: 600; font-size: 13px;
+  cursor: pointer; transition: all 0.3s;
+}
+.select-flight-btn:hover { background: rgba(240,165,0,0.2); }
+
+/* ── CHECKLIST ── */
+.checklist-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px;
+}
+.checklist-category {
+  padding: 20px;
+}
+.checklist-category h4 { font-size: 14px; margin-bottom: 12px; color: #F0A500; }
+.checklist-items { display: flex; flex-direction: column; gap: 8px; }
+.checklist-item {
+  display: flex; align-items: center; gap: 10px; font-size: 13px; cursor: pointer;
+  transition: all 0.3s;
+}
+.checklist-item input[type="checkbox"] {
+  -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 4px;
+  border: 2px solid rgba(255,255,255,0.15); cursor: pointer; transition: all 0.3s;
+  position: relative; flex-shrink: 0;
+}
+.checklist-item input[type="checkbox"]:checked {
+  background: #F0A500; border-color: #F0A500;
+}
+.checklist-item input[type="checkbox"]:checked::after {
+  content: '✓'; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  color: #0A0F2C; font-size: 12px; font-weight: 700;
+}
+.checklist-item.checked span { text-decoration: line-through; opacity: 0.3; }
+.checklist-progress {
+  grid-column: 1 / -1; text-align: center; margin-bottom: 8px;
+}
+.checklist-progress p { font-size: 14px; color: rgba(253,246,236,0.5); margin-bottom: 8px; }
+.add-custom-item {
+  display: flex; gap: 8px; margin-top: 12px;
+}
+.add-custom-item input {
+  flex: 1; padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(0,0,0,0.3); color: #FDF6EC; font-size: 13px;
+}
+.add-custom-item button {
+  padding: 8px 16px; border: none; border-radius: 8px;
+  background: rgba(240,165,0,0.1); color: #F0A500; font-weight: 600; font-size: 13px; cursor: pointer;
+}
+.dl-checklist-btn {
+  margin-top: 20px; padding: 12px 28px; border: none; border-radius: 10px;
+  background: linear-gradient(135deg, #F0A500, #e09400); color: #0A0F2C;
+  font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.3s;
+}
+
+/* ── TIPS ── */
+.tips-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;
+}
+.tip-card {
+  padding: 24px;
+}
+.tip-card h4 { font-size: 16px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.tip-card p { font-size: 13px; color: rgba(253,246,236,0.6); line-height: 1.7; }
+.tip-card .emergency-num {
+  font-size: 18px; font-weight: 700; color: #FF6B6B;
+}
+
+/* ── CHAT PANEL ── */
+.chat-panel {
+  position: fixed; top: 72px; right: 0; width: 360px; height: calc(100vh - 72px);
+  background: rgba(10, 15, 44, 0.95);
+  backdrop-filter: blur(16px) saturate(1.2);
+  border-left: 1px solid rgba(240, 165, 0, 0.1);
+  display: flex; flex-direction: column; z-index: 50;
+  transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.chat-panel.open { transform: translateX(0); }
+.chat-header {
+  padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.06);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.chat-header-left { display: flex; align-items: center; gap: 10px; }
+.chat-header h3 { font-size: 16px; }
+.online-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: #22c55e;
+  box-shadow: 0 0 8px rgba(34,197,94,0.4);
+}
+.api-key-input {
+  background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px; padding: 6px 10px; color: #FDF6EC; font-size: 11px; width: 140px;
+}
+.api-key-input::placeholder { color: rgba(253,246,236,0.2); }
+
+.chat-messages {
+  flex: 1; overflow-y: auto; padding: 16px 20px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.chat-msg {
+  max-width: 85%; padding: 12px 16px; border-radius: 12px;
+  font-size: 13px; line-height: 1.6; animation: msgIn 0.3s ease;
+}
+@keyframes msgIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.chat-msg.user {
+  align-self: flex-end;
+  background: linear-gradient(135deg, #F0A500, #e09400);
+  color: #0A0F2C; border-bottom-right-radius: 4px;
+}
+.chat-msg.bot {
+  align-self: flex-start;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.04);
+  border-bottom-left-radius: 4px;
+}
+
+.typing-indicator {
+  display: flex; gap: 4px; padding: 12px 16px; align-self: flex-start;
+  background: rgba(255,255,255,0.04); border-radius: 12px; border-bottom-left-radius: 4px;
+}
+.typing-indicator span {
+  width: 6px; height: 6px; border-radius: 50%; background: rgba(253,246,236,0.3);
+  animation: typing 1.4s infinite;
+}
+.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typing {
+  0%, 60%, 100% { transform: translateY(0); background: rgba(253,246,236,0.3); }
+  30% { transform: translateY(-6px); background: #F0A500; }
+}
+
+.quick-chips {
+  display: flex; gap: 6px; padding: 8px 20px; overflow-x: auto; flex-shrink: 0;
+}
+.quick-chip {
+  white-space: nowrap; padding: 6px 14px; border-radius: 16px;
+  border: 1px solid rgba(240,165,0,0.15); background: transparent;
+  color: rgba(253,246,236,0.5); font-size: 11px; cursor: pointer;
+  transition: all 0.3s;
+}
+.quick-chip:hover { border-color: #F0A500; color: #F0A500; background: rgba(240,165,0,0.06); }
+
+.chat-input-area {
+  display: flex; gap: 8px; padding: 12px 20px;
+  border-top: 1px solid rgba(255,255,255,0.06); flex-shrink: 0;
+}
+.chat-input-area input {
+  flex: 1; padding: 12px 16px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(0,0,0,0.3); color: #FDF6EC; font-size: 13px;
+}
+.chat-input-area input:focus { border-color: #F0A500; }
+.chat-input-area button {
+  width: 44px; height: 44px; border-radius: 12px; border: none;
+  background: linear-gradient(135deg, #F0A500, #e09400); color: #0A0F2C;
+  font-size: 18px; cursor: pointer; transition: all 0.3s;
+  display: flex; align-items: center; justify-content: center;
+}
+.chat-input-area button:hover { transform: scale(1.05); }
+.chat-input-area button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.chat-toggle-mobile {
+  display: none; position: fixed; bottom: 24px; right: 24px; z-index: 60;
+  width: 56px; height: 56px; border-radius: 50%;
+  background: linear-gradient(135deg, #F0A500, #e09400); border: none;
+  color: #0A0F2C; font-size: 24px; cursor: pointer;
+  box-shadow: 0 4px 20px rgba(240,165,0,0.3);
+  transition: all 0.3s; align-items: center; justify-content: center;
+}
+.chat-toggle-mobile:hover { transform: scale(1.1); }
+
+/* ── MAP PLACEHOLDER ── */
+.map-placeholder {
+  height: 200px; border-radius: 12px;
+  background: rgba(255,255,255,0.02); margin-top: 20px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; color: rgba(253,246,236,0.3);
+  border: 1px solid rgba(255,255,255,0.04);
+  overflow: hidden;
+}
+.map-placeholder iframe { width: 100%; height: 100%; border: none; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 1024px) {
+  .chat-panel {
+    width: 320px;
+  }
+  .chat-open .main-content { margin-right: 320px; }
+}
+
+@media (max-width: 768px) {
+  .navbar-links { display: none; }
+  .navbar-links.open { display: flex; flex-direction: column; position: absolute; top: 72px; left: 0; right: 0; background: rgba(10,15,44,0.98); padding: 16px; border-bottom: 1px solid rgba(240,165,0,0.1); }
+  .mobile-menu-btn { display: block; }
+  .section { padding: 48px 20px; }
+  .hero { padding: 24px 20px; }
+  .hero h1 { font-size: 32px; }
+  .trip-form { grid-template-columns: 1fr; padding: 20px; }
+  .budget-dashboard { grid-template-columns: 1fr; }
+  .chat-panel {
+    position: fixed; top: auto; bottom: 0; left: 0; width: 100%; height: 70vh;
+    transform: translateY(100%); border-left: none; border-top: 1px solid rgba(240,165,0,0.1);
+    border-radius: 20px 20px 0 0;
+  }
+  .chat-panel.open { transform: translateY(0); }
+  .chat-open .main-content { margin-right: 0; }
+  .chat-toggle-mobile { display: flex; }
+  .chat-panel.open ~ .chat-toggle-mobile { display: none; }
+  .hotel-grid, .checklist-grid, .tips-grid { grid-template-columns: 1fr; }
+  .flight-card { flex-direction: column; align-items: flex-start; }
+  .flight-route { width: 100%; justify-content: center; }
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.min.js"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.js"></script>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
+const { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } = Recharts;
+
+/* ─── GOA DEMO DATA ─── */
+const GOA_DATA = {
+  destination: 'Goa',
+  source: 'Bangalore',
+  travelers: 2,
+  tripType: 'Beach',
+  duration: 4,
+  budget: 80000,
+  itinerary: [
+    {
+      day: 1, date: 'Mon, 15 Jun',
+      weather: { condition: 'Sunny', temp: 32, icon: '☀️' },
+      activities: [
+        { time: 'Morning', name: 'Arrival & Check-in at Beach Resort', desc: 'Check into your beachfront resort in North Goa. Freshen up and enjoy a welcome drink.', duration: '2 hrs', cost: 0, location: 'Calangute' },
+        { time: 'Afternoon', name: 'Calangute Beach Walk & Lunch', desc: 'Stroll along the golden sands of Calangute Beach. Enjoy fresh seafood at a beachside shack.', duration: '3 hrs', cost: 1200, location: 'Calangute Beach' },
+        { time: 'Evening', name: 'Sunset at Anjuna Flea Market', desc: 'Explore the famous Anjuna Flea Market for souvenirs, jewelry, and local crafts. Catch the sunset.', duration: '3 hrs', cost: 800, location: 'Anjuna' }
+      ]
+    },
+    {
+      day: 2, date: 'Tue, 16 Jun',
+      weather: { condition: 'Sunny', temp: 33, icon: '☀️' },
+      activities: [
+        { time: 'Morning', name: 'Water Sports at Baga Beach', desc: 'Parasailing, jet-skiing, and banana boat rides at Baga Beach. Thrilling water sports!', duration: '3 hrs', cost: 2500, location: 'Baga Beach' },
+        { time: 'Afternoon', name: 'Portuguese Lunch at Old Goa', desc: 'Visit the historic Basilica of Bom Jesus and enjoy authentic Goan Portuguese cuisine.', duration: '2 hrs', cost: 1500, location: 'Old Goa' },
+        { time: 'Evening', name: 'Cruise on Mandovi River', desc: 'Enjoy a romantic sunset cruise on the Mandovi River with live music and dinner.', duration: '3 hrs', cost: 2000, location: 'Panjim' }
+      ]
+    },
+    {
+      day: 3, date: 'Wed, 17 Jun',
+      weather: { condition: 'Cloudy', temp: 30, icon: '⛅' },
+      activities: [
+        { time: 'Morning', name: 'Spice Plantation Tour', desc: 'Visit a traditional Goan spice plantation. Learn about spices like cardamom, pepper, and vanilla.', duration: '3 hrs', cost: 1000, location: 'Ponda' },
+        { time: 'Afternoon', name: 'Dudhsagar Waterfalls Trip', desc: 'Jeep safari to the magnificent Dudhsagar Waterfalls. Swim in the natural pool.', duration: '4 hrs', cost: 2000, location: 'Bhagwan Mahavir Sanctuary' },
+        { time: 'Evening', name: 'Goan Cultural Show', desc: 'Experience traditional Goan music and dance performances at a local cultural center.', duration: '2 hrs', cost: 800, location: 'Panjim' }
+      ]
+    },
+    {
+      day: 4, date: 'Thu, 18 Jun',
+      weather: { condition: 'Sunny', temp: 31, icon: '☀️' },
+      activities: [
+        { time: 'Morning', name: 'South Goa Beach Hopping', desc: 'Visit pristine beaches of South Goa — Palolem, Butterfly Beach, and Cola Beach.', duration: '4 hrs', cost: 1500, location: 'South Goa' },
+        { time: 'Afternoon', name: 'Shopping at Mapusa Market', desc: 'Buy Goan spices, cashew nuts, feni, and handmade souvenirs at the local market.', duration: '2 hrs', cost: 2000, location: 'Mapusa' },
+        { time: 'Evening', name: 'Farewell Dinner at Beachside', desc: 'Enjoy a memorable farewell dinner at a candlelit beachside restaurant with live music.', duration: '3 hrs', cost: 3000, location: 'Vagator Beach' }
+      ]
+    }
+  ],
+  hotels: [
+    { name: 'Taj Fort Aguada Resort & Spa', stars: 5, location: 'Sinquerim', pricePerNight: 15000, amenities: ['Pool', 'Spa', 'Beach Access', 'Fine Dining', 'Bar'] },
+    { name: 'W Goa', stars: 5, location: 'Vagator', pricePerNight: 12000, amenities: ['Pool', 'Spa', 'Gym', 'Restaurant', 'Bar'] },
+    { name: 'Resort Rio', stars: 3, location: 'Arpora', pricePerNight: 3500, amenities: ['Pool', 'Restaurant', 'Bar', 'Garden'] },
+    { name: 'Baga Beach Resort', stars: 3, location: 'Baga', pricePerNight: 2800, amenities: ['Pool', 'Restaurant', 'Beach Access'] },
+    { name: 'Hostel Mantra', stars: 2, location: 'Anjuna', pricePerNight: 800, amenities: ['Free WiFi', 'Common Area', 'Kitchen'] },
+    { name: 'The St. Regis Goa Resort', stars: 5, location: 'Cavelossim', pricePerNight: 22000, amenities: ['Pool', 'Spa', 'Private Beach', 'Butler', 'Fine Dining'] }
+  ],
+  flights: [
+    { airline: 'IndiGo', code: '6E 123', from: 'BLR', to: 'GOI', departure: '06:30', arrival: '08:15', duration: '1h 45m', stops: 'Direct', price: 4200 },
+    { airline: 'SpiceJet', code: 'SG 456', from: 'BLR', to: 'GOI', departure: '09:45', arrival: '11:30', duration: '1h 45m', stops: 'Direct', price: 3800 },
+    { airline: 'Vistara', code: 'UK 789', from: 'BLR', to: 'GOI', departure: '14:20', arrival: '17:10', duration: '2h 50m', stops: '1 Stop (BOM)', price: 5500 },
+    { airline: 'Air India', code: 'AI 101', from: 'BLR', to: 'GOI', departure: '07:00', arrival: '08:45', duration: '1h 45m', stops: 'Direct', price: 4600 },
+    { airline: 'Akasa Air', code: 'QP 202', from: 'BLR', to: 'GOI', departure: '16:30', arrival: '19:15', duration: '2h 45m', stops: '1 Stop (HYD)', price: 3400 }
+  ],
+  tips: {
+    bestTime: 'October to March (peak season, pleasant weather). June to September (monsoon, fewer crowds, lush green).',
+    customs: 'Greet with "Namaste". Remove footwear before entering temples. Dress modestly at religious sites. Tipping 10% at restaurants is appreciated.',
+    safety: 'Stick to well-lit areas at night. Use app-based cabs (Uber/Ola). Avoid secluded beaches after dark. Stay hydrated in the sun.',
+    emergency: { police: '100', ambulance: '108', tourism: '1800-11-1363', fire: '101' },
+    currency: 'ATMs widely available. Cash preferred at local markets. Major cards accepted at hotels and chains.',
+    phrases: [
+      { phrase: 'Namaste / Hello', meaning: 'Formal greeting' },
+      { phrase: 'Dev borem korum', meaning: 'Thank you (Konkani)' },
+      { phrase: 'Kitea asa?', meaning: 'How much?' },
+      { phrase: 'Kitea mhollear?', meaning: 'Where is?' }
+    ]
+  }
+};
+
+const COLORS = { flights: '#F0A500', hotels: '#FF6B6B', food: '#22c55e', activities: '#3b82f6', transport: '#a855f7', shopping: '#ec4899', misc: '#64748b' };
+
+const INR = v => '₹' + (v ?? 0).toLocaleString('en-IN');
+
+/* ─── NAVBAR ─── */
+function Navbar() {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [active, setActive] = useState('hero');
+  useEffect(() => {
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) setActive(e.target.id); });
+    }, { rootMargin: '-50% 0px -50% 0px' });
+    const sections = document.querySelectorAll('.section');
+    sections.forEach(s => observer.observe(s));
+    return () => observer.disconnect();
+  }, []);
+  const links = [
+    { id: 'plan', label: 'Plan Trip' },
+    { id: 'itinerary', label: 'Itinerary' },
+    { id: 'budget', label: 'Budget' },
+    { id: 'hotels', label: 'Hotels' },
+    { id: 'flights', label: 'Flights' },
+    { id: 'checklist', label: 'Checklist' },
+    { id: 'tips', label: 'Tips' }
+  ];
+  return (
+    <nav className="navbar">
+      <div className="navbar-logo">✈️ YatraAI</div>
+      <button className="mobile-menu-btn" onClick={() => setMobileOpen(!mobileOpen)}>
+        {mobileOpen ? '✕' : '☰'}
+      </button>
+      <ul className={'navbar-links' + (mobileOpen ? ' open' : '')}>
+        {links.map(l => (
+          <li key={l.id}>
+            <a href={'#' + l.id} className={active === l.id ? 'active' : ''}
+               onClick={() => setMobileOpen(false)}>{l.label}</a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
+/* ─── HERO ─── */
+function HeroSection({ onPlanTrip }) {
+  const [form, setForm] = useState({
+    source: 'Bangalore',
+    destination: 'Goa',
+    startDate: '2026-06-15',
+    endDate: '2026-06-18',
+    adults: 2,
+    children: 0,
+    tripType: 'Beach',
+    budget: 80000
+  });
+  const popularDests = ['Goa', 'Manali', 'Kerala', 'Rajasthan', 'Andaman', 'Leh-Ladakh', 'Varanasi', 'Ooty', 'Rishikesh', 'Darjeeling'];
+  const indianCities = ['Delhi', 'Mumbai', 'Bangalore', 'Chennai', 'Kolkata', 'Hyderabad', 'Pune', 'Ahmedabad', 'Jaipur', 'Chandigarh', 'Lucknow', 'Kochi'];
+
+  return (
+    <section id="plan" className="section visible hero">
+      <div className="hero-content">
+        <h1>YatraAI</h1>
+        <p className="hero-sub">Your Personal Indian Travel Concierge — plan, book, and explore with AI</p>
+        <div className="trip-form">
+          <div className="form-group">
+            <label>From</label>
+            <select value={form.source} onChange={e => setForm({...form, source: e.target.value})}>
+              {indianCities.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div className="form-group">
+            <label>Destination</label>
+            <input value={form.destination} onChange={e => setForm({...form, destination: e.target.value})} placeholder="Enter destination" />
+          </div>
+          <div className="form-group full">
+            <label>Popular Destinations</label>
+            <div className="dest-chips">
+              {popularDests.map(d => (
+                <button key={d} className={'dest-chip' + (form.destination === d ? ' active' : '')}
+                  onClick={() => setForm({...form, destination: d})}>{d}</button>
+              ))}
+            </div>
+          </div>
+          <div className="form-group">
+            <label>Start Date</label>
+            <input type="date" value={form.startDate} onChange={e => setForm({...form, startDate: e.target.value})} />
+          </div>
+          <div className="form-group">
+            <label>End Date</label>
+            <input type="date" value={form.endDate} onChange={e => setForm({...form, endDate: e.target.value})} />
+          </div>
+          <div className="form-group">
+            <label>Adults</label>
+            <input type="number" min="1" value={form.adults} onChange={e => setForm({...form, adults: parseInt(e.target.value) || 1})} />
+          </div>
+          <div className="form-group">
+            <label>Children</label>
+            <input type="number" min="0" value={form.children} onChange={e => setForm({...form, children: parseInt(e.target.value) || 0})} />
+          </div>
+          <div className="form-group">
+            <label>Trip Type</label>
+            <select value={form.tripType} onChange={e => setForm({...form, tripType: e.target.value})}>
+              {['Adventure', 'Family', 'Honeymoon', 'Solo', 'Group', 'Budget', 'Luxury', 'Beach'].map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+          <div className="form-group">
+            <label>Budget: <span className="budget-display">{INR(form.budget)}</span></label>
+            <input type="range" min="5000" max="500000" step="1000" value={form.budget}
+              onChange={e => setForm({...form, budget: parseInt(e.target.value)})} />
+          </div>
+          <button className="cta-btn" onClick={() => onPlanTrip(form)}>
+            Plan My Trip ✈️
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─── ITINERARY ─── */
+function ItinerarySection() {
+  const [days, setDays] = useState(GOA_DATA.itinerary);
+  const [visible, setVisible] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.1 });
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, []);
+
+  return (
+    <section id="itinerary" ref={ref} className={'section' + (visible ? ' visible' : '')}>
+      <div className="section-header">
+        <h2>Your Itinerary</h2>
+        <p>{GOA_DATA.duration} days in {GOA_DATA.destination} from {GOA_DATA.source}</p>
+        <div className="gold-accent"></div>
+      </div>
+      <div className="itinerary-grid">
+        {days.map((day, di) => (
+          <div key={di} className="day-card glass">
+            <div className="day-card-header">
+              <div className="day-badge">
+                <div className="day-number">{day.day}</div>
+                <div>
+                  <h3 style={{fontSize: 18}}>Day {day.day}</h3>
+                  <div className="day-date">{day.date}</div>
+                </div>
+              </div>
+              <div className="weather-badge">{day.weather.icon} {day.weather.temp}°C</div>
+            </div>
+            <div className="activities">
+              {day.activities.map((a, ai) => (
+                <div key={ai} className="activity-card" style={{borderLeftColor: COLORS[a.time === 'Morning' ? 'food' : a.time === 'Afternoon' ? 'activities' : 'shopping']}}>
+                  <div className="activity-time">{a.time}</div>
+                  <div className="activity-details">
+                    <h4>{a.name}</h4>
+                    <p>{a.desc}</p>
+                    <div className="activity-meta">
+                      <span>⏱ {a.duration}</span>
+                      <span>📍 {a.location}</span>
+                      {a.cost > 0 && <span>{INR(a.cost)}</span>}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button className="add-activity-btn" onClick={() => {
+              const newDays = [...days];
+              newDays[di].activities.push({ time: 'Evening', name: 'Free Time', desc: 'Explore on your own or relax at the resort', duration: 'Flexible', cost: 0, location: GOA_DATA.destination });
+              setDays(newDays);
+            }}>+ Add Activity</button>
+            <div className="map-placeholder">
+              <iframe src={`https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d246264.9587034436!2d73.82328995!3d15.49092935!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bbfba4e8e5d5b9f%3A0x7b8d7f1b5e5d5b9f!2sGoa!5e0!3m2!1sen!2sin!4v1`} loading="lazy" referrerPolicy="no-referrer-when-downgrade"></iframe>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ─── BUDGET ─── */
+function BudgetSection() {
+  const budgetData = [
+    { name: 'Flights', value: 19000, color: COLORS.flights },
+    { name: 'Hotels', value: 28000, color: COLORS.hotels },
+    { name: 'Food', value: 9000, color: COLORS.food },
+    { name: 'Activities', value: 10600, color: COLORS.activities },
+    { name: 'Transport', value: 5000, color: COLORS.transport },
+    { name: 'Shopping', value: 4800, color: COLORS.shopping },
+    { name: 'Misc', value: 3600, color: COLORS.misc }
+  ];
+  const totalSpent = budgetData.reduce((s, d) => s + d.value, 0);
+  const totalBudget = GOA_DATA.budget;
+  const pct = Math.min(100, (totalSpent / totalBudget) * 100);
+  const perPerson = totalSpent / GOA_DATA.travelers;
+  const health = totalSpent <= totalBudget ? 'under' : totalSpent <= totalBudget * 1.1 ? 'track' : 'over';
+
+  const [expenses, setExpenses] = useState(budgetData.map((d, i) => ({
+    id: i, date: '2026-06-15', category: d.name, description: d.name + ' expenses', amount: d.value
+  })));
+  const [newExp, setNewExp] = useState({ date: '2026-06-18', category: 'Food', description: '', amount: '' });
+  const nextId = useRef(expenses.length);
+
+  const addExpense = () => {
+    if (!newExp.description || !newExp.amount) return;
+    setExpenses([...expenses, { ...newExp, id: nextId.current++, amount: parseInt(newExp.amount) }]);
+    setNewExp({ ...newExp, description: '', amount: '' });
+  };
+  const delExpense = id => setExpenses(expenses.filter(e => e.id !== id));
+
+  const exportCSV = () => {
+    const rows = [['Date', 'Category', 'Description', 'Amount (INR)']];
+    expenses.forEach(e => rows.push([e.date, e.category, e.description, e.amount]));
+    const csv = rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'budget_goa.csv'; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const [visible, setVisible] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.1 });
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, []);
+
+  return (
+    <section id="budget" ref={ref} className={'section' + (visible ? ' visible' : '')}>
+      <div className="section-header">
+        <h2>Budget Analyzer</h2>
+        <p>Track every rupee of your trip</p>
+        <div className="gold-accent"></div>
+      </div>
+      <div className="budget-dashboard">
+        <div className="budget-card glass">
+          <h3>Spend Breakdown</h3>
+          <div className="budget-chart-container">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={budgetData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={3} dataKey="value">
+                  {budgetData.map((e, i) => <Cell key={i} fill={e.color} />)}
+                </Pie>
+                <Tooltip formatter={(v) => INR(v)} />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        <div className="budget-card glass">
+          <h3>Budget Health</h3>
+          <div className="budget-metrics">
+            <div className="budget-metric">
+              <div className="value">{INR(totalBudget)}</div>
+              <div className="label">Total Budget</div>
+            </div>
+            <div className="budget-metric">
+              <div className="value">{INR(totalSpent)}</div>
+              <div className="label">Total Spent</div>
+            </div>
+            <div className="budget-metric">
+              <div className="value">{INR(perPerson)}</div>
+              <div className="label">Per Person</div>
+            </div>
+          </div>
+          <div style={{marginTop: 16}}>
+            <div style={{display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'rgba(253,246,236,0.4)', marginBottom: 4}}>
+              <span>Spent: {INR(totalSpent)}</span>
+              <span>{Math.round(pct)}%</span>
+            </div>
+            <div className="progress-bar">
+              <div className="progress-fill" style={{width: pct + '%', background: health === 'under' ? '#22c55e' : health === 'track' ? '#F0A500' : '#FF6B6B'}}></div>
+            </div>
+          </div>
+          <div className="budget-health" style={{
+            background: health === 'under' ? 'rgba(34,197,94,0.1)' : health === 'track' ? 'rgba(240,165,0,0.1)' : 'rgba(255,107,107,0.1)',
+            color: health === 'under' ? '#22c55e' : health === 'track' ? '#F0A500' : '#FF6B6B'
+          }}>
+            {health === 'under' ? '🟢 Under Budget' : health === 'track' ? '🟡 On Track' : '🔴 Over Budget'}
+          </div>
+        </div>
+        <div className="budget-card glass expense-table">
+          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16}}>
+            <h3>Expense Log</h3>
+            <button className="export-btn" onClick={exportCSV}>📥 Export CSV</button>
+          </div>
+          <table>
+            <thead>
+              <tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th></th></tr>
+            </thead>
+            <tbody>
+              {expenses.map(e => (
+                <tr key={e.id}>
+                  <td>{e.date}</td>
+                  <td>{e.category}</td>
+                  <td>{e.description}</td>
+                  <td>{INR(e.amount)}</td>
+                  <td><button className="del-btn" onClick={() => delExpense(e.id)}>✕</button></td>
+                </tr>
+              ))}
+              <tr>
+                <td><input type="date" value={newExp.date} onChange={e => setNewExp({...newExp, date: e.target.value})} /></td>
+                <td>
+                  <select value={newExp.category} onChange={e => setNewExp({...newExp, category: e.target.value})}>
+                    {budgetData.map(b => <option key={b.name}>{b.name}</option>)}
+                  </select>
+                </td>
+                <td><input value={newExp.description} onChange={e => setNewExp({...newExp, description: e.target.value})} placeholder="Description" /></td>
+                <td><input type="number" value={newExp.amount} onChange={e => setNewExp({...newExp, amount: e.target.value})} placeholder="₹" /></td>
+                <td><button className="add-row-btn" onClick={addExpense}>+ Add</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─── HOTELS ─── */
+function HotelSection() {
+  const [filter, setFilter] = useState('all');
+  const [visible, setVisible] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.1 });
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, []);
+
+  const filtered = GOA_DATA.hotels.filter(h => {
+    if (filter === 'budget') return h.pricePerNight < 3000;
+    if (filter === 'mid') return h.pricePerNight >= 3000 && h.pricePerNight < 10000;
+    if (filter === 'luxury') return h.pricePerNight >= 10000;
+    return true;
+  });
+
+  return (
+    <section id="hotels" ref={ref} className={'section' + (visible ? ' visible' : '')}>
+      <div className="section-header">
+        <h2>Hotels in {GOA_DATA.destination}</h2>
+        <p>Find the perfect stay for your trip</p>
+        <div className="gold-accent"></div>
+      </div>
+      <div className="hotel-filters">
+        {[{k:'all',l:'All'},{k:'budget',l:'Budget (< ₹3,000)'},{k:'mid',l:'Mid-Range'},{k:'luxury',l:'Luxury'}].map(f => (
+          <button key={f.k} className={filter === f.k ? 'active' : ''} onClick={() => setFilter(f.k)}>{f.l}</button>
+        ))}
+      </div>
+      <div className="hotel-grid">
+        {filtered.map((h, i) => (
+          <div key={i} className="hotel-card glass">
+            <div className="stars">{'★'.repeat(h.stars)}{'☆'.repeat(5 - h.stars)}</div>
+            <h4>{h.name}</h4>
+            <div className="location">📍 {h.location}</div>
+            <div className="hotel-amenities">{h.amenities.map((a, j) => <span key={j} className="amenity-tag">{a}</span>)}</div>
+            <div className="hotel-price">{INR(h.pricePerNight)} <span>/ night</span></div>
+            <button className="book-btn" onClick={() => alert('Booking simulation for ' + h.name)}>Book Now</button>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ─── FLIGHTS ─── */
+function FlightSection() {
+  const [sort, setSort] = useState('cheapest');
+  const [visible, setVisible] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.1 });
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, []);
+
+  const sorted = [...GOA_DATA.flights].sort((a, b) => {
+    if (sort === 'cheapest') return a.price - b.price;
+    if (sort === 'fastest') {
+      const dur = s => parseInt(s.duration);
+      return dur(a) - dur(b);
+    }
+    return a.stops === 'Direct' ? -1 : 1;
+  });
+
+  return (
+    <section id="flights" ref={ref} className={'section' + (visible ? ' visible' : '')}>
+      <div className="section-header">
+        <h2>Flights to {GOA_DATA.destination}</h2>
+        <p>{GOA_DATA.source} → GOI (Goa International Airport)</p>
+        <div className="gold-accent"></div>
+      </div>
+      <div className="flight-filters">
+        {[{k:'cheapest',l:'💰 Cheapest'},{k:'fastest',l:'⚡ Fastest'},{k:'direct',l:'✈️ Non-stop'}].map(f => (
+          <button key={f.k} className={sort === f.k ? 'active' : ''} onClick={() => setSort(f.k)}>{f.l}</button>
+        ))}
+      </div>
+      <div className="flight-list">
+        {sorted.map((f, i) => (
+          <div key={i} className="flight-card glass">
+            <div className="flight-airline">
+              <div>
+                <h4>{f.airline}</h4>
+                <div className="code">{f.code}</div>
+              </div>
+            </div>
+            <div className="flight-route">
+              <div>
+                <div className="time">{f.departure}</div>
+                <div className="airport">{f.from}</div>
+              </div>
+              <div className="line"></div>
+              <div>
+                <div className="time">{f.arrival}</div>
+                <div className="airport">{f.to}</div>
+              </div>
+            </div>
+            <div className="flight-details">
+              <div className="price">{INR(f.price)}</div>
+              <div className="stops">{f.duration} • {f.stops}</div>
+            </div>
+            <button className="select-flight-btn" onClick={() => alert('Flight ' + f.code + ' selected!')}>Select Flight</button>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ─── CHECKLIST ─── */
+function ChecklistSection() {
+  const defaultItems = {
+    Clothing: ['T-shirts (4-5)', 'Shorts/Pants', 'Swimwear', 'Beach Slippers', 'Sunglasses', 'Hat/Cap', 'Light Jacket', 'Evening Wear'],
+    Toiletries: ['Sunscreen SPF 50+', 'Mosquito Repellent', 'Shampoo/Conditioner', 'Toothbrush/Paste', 'Deodorant', 'Wet Wipes'],
+    Documents: ['Aadhar Card/Voter ID', 'Flight Tickets (print)', 'Hotel Confirmations', 'Travel Insurance', 'Cash & Cards'],
+    Gadgets: ['Phone + Charger', 'Power Bank', 'Camera', 'Earphones', 'Universal Adapter'],
+    Medicines: ['Motion Sickness Pills', 'Pain Relievers', 'Antacids', 'Band-aids', 'ORS Packets'],
+    Misc: ['Reusable Water Bottle', 'Dry Bag', 'Snacks', 'Books/Kindle', 'Travel Pillow', 'Lock for Bag']
+  };
+  const [items, setItems] = useState(() => {
+    const all = {};
+    Object.entries(defaultItems).forEach(([cat, list]) => {
+      all[cat] = list.map((name, i) => ({ id: cat + i, name, checked: false }));
+    });
+    return all;
+  });
+  const [newItems, setNewItems] = useState({});
+  const total = Object.values(items).flat().length;
+  const checked = Object.values(items).flat().filter(i => i.checked).length;
+
+  const toggle = (cat, id) => setItems({...items, [cat]: items[cat].map(i => i.id === id ? {...i, checked: !i.checked} : i)});
+  const addCustom = cat => {
+    if (!newItems[cat]?.trim()) return;
+    const newItem = { id: cat + Date.now(), name: newItems[cat], checked: false };
+    setItems({...items, [cat]: [...items[cat], newItem]});
+    setNewItems({...newItems, [cat]: ''});
+  };
+
+  const downloadList = () => {
+    let text = 'Packing Checklist - ' + GOA_DATA.destination + '\n';
+    text += '='.repeat(40) + '\n\n';
+    Object.entries(items).forEach(([cat, list]) => {
+      text += cat.toUpperCase() + '\n' + '-'.repeat(cat.length) + '\n';
+      list.forEach(i => text += (i.checked ? '[✓] ' : '[ ] ') + i.name + '\n');
+      text += '\n';
+    });
+    text += '\nTotal: ' + checked + '/' + total + ' items packed';
+    const blob = new Blob([text], { type: 'text/plain' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'packing_list_goa.txt'; a.click();
+  };
+
+  const [visible, setVisible] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.1 });
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, []);
+
+  return (
+    <section id="checklist" ref={ref} className={'section' + (visible ? ' visible' : '')}>
+      <div className="section-header">
+        <h2>Packing Checklist</h2>
+        <p>Smart packing for your {GOA_DATA.destination} trip ({GOA_DATA.tripType})</p>
+        <div className="gold-accent"></div>
+      </div>
+      <div className="checklist-progress">
+        <p>{checked} of {total} items packed</p>
+        <div className="progress-bar" style={{maxWidth: 400, margin: '0 auto'}}>
+          <div className="progress-fill" style={{width: total ? (checked/total*100)+'%' : '0%', background: 'linear-gradient(90deg, #F0A500, #e09400)'}}></div>
+        </div>
+      </div>
+      <div className="checklist-grid">
+        {Object.entries(items).map(([cat, list]) => (
+          <div key={cat} className="checklist-category glass">
+            <h4>{cat}</h4>
+            <div className="checklist-items">
+              {list.map(i => (
+                <label key={i.id} className={'checklist-item' + (i.checked ? ' checked' : '')} onClick={() => toggle(cat, i.id)}>
+                  <input type="checkbox" checked={i.checked} readOnly />
+                  <span>{i.name}</span>
+                </label>
+              ))}
+            </div>
+            <div className="add-custom-item">
+              <input value={newItems[cat] || ''} onChange={e => setNewItems({...newItems, [cat]: e.target.value})} placeholder="Add item..." />
+              <button onClick={() => addCustom(cat)}>+</button>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{textAlign: 'center', marginTop: 24}}>
+        <button className="dl-checklist-btn" onClick={downloadList}>📄 Download List</button>
+      </div>
+    </section>
+  );
+}
+
+/* ─── TIPS ─── */
+function TipsSection() {
+  const [visible, setVisible] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.1 });
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, []);
+
+  return (
+    <section id="tips" ref={ref} className={'section' + (visible ? ' visible' : '')}>
+      <div className="section-header">
+        <h2>Travel Tips & Alerts</h2>
+        <p>Everything you need to know about {GOA_DATA.destination}</p>
+        <div className="gold-accent"></div>
+      </div>
+      <div className="tips-grid">
+        <div className="tip-card glass">
+          <h4>🗓️ Best Time to Visit</h4>
+          <p>{GOA_DATA.tips.bestTime}</p>
+        </div>
+        <div className="tip-card glass">
+          <h4>🎭 Local Customs</h4>
+          <p>{GOA_DATA.tips.customs}</p>
+        </div>
+        <div className="tip-card glass" style={{borderColor: 'rgba(255,107,107,0.2)'}}>
+          <h4>🛡️ Safety Tips</h4>
+          <p>{GOA_DATA.tips.safety}</p>
+        </div>
+        <div className="tip-card glass" style={{borderColor: 'rgba(255,107,107,0.2)'}}>
+          <h4>🚨 Emergency Numbers</h4>
+          <p style={{display: 'flex', flexDirection: 'column', gap: 8}}>
+            <span>Police: <span className="emergency-num">{GOA_DATA.tips.emergency.police}</span></span>
+            <span>Ambulance: <span className="emergency-num">{GOA_DATA.tips.emergency.ambulance}</span></span>
+            <span>Tourist Helpline: <span className="emergency-num">{GOA_DATA.tips.emergency.tourism}</span></span>
+            <span>Fire: <span className="emergency-num">{GOA_DATA.tips.emergency.fire}</span></span>
+          </p>
+        </div>
+        <div className="tip-card glass">
+          <h4>💳 Currency & ATMs</h4>
+          <p>{GOA_DATA.tips.currency}</p>
+        </div>
+        <div className="tip-card glass">
+          <h4>🗣️ Local Phrases</h4>
+          <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
+            {GOA_DATA.tips.phrases.map((p, i) => (
+              <div key={i} style={{fontSize: 13, display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: 4}}>
+                <span style={{color: '#F0A500'}}>{p.phrase}</span>
+                <span style={{color: 'rgba(253,246,236,0.4)'}}>— {p.meaning}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─── CHAT ─── */
+function ChatPanel({ open, onToggle }) {
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('anthropic_key') || '');
+  const [messages, setMessages] = useState([
+    { role: 'assistant', text: '👋 Namaste! I\'m YatraBot, your Indian travel concierge. Ask me anything about your {GOA_DATA.destination} trip!' }
+  ]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const typingRef = useRef(null);
+  const endRef = useRef(null);
+
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading]);
+
+  const sendMessage = useCallback(async (text) => {
+    if (!text.trim() || loading) return;
+    if (!apiKey) { alert('Please enter your Anthropic API key in the chat header first.'); return; }
+    localStorage.setItem('anthropic_key', apiKey);
+    const userMsg = { role: 'user', text: text.trim() };
+    const newMsgs = [...messages, userMsg];
+    setMessages(newMsgs);
+    setInput('');
+    setLoading(true);
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: 'You are YatraBot, a friendly and expert Indian travel concierge. You specialize in travel within India. Always provide costs in INR (₹) using Indian number formatting. Give specific, actionable advice. Be warm, enthusiastic, and concise. Use relevant emojis. When suggesting budgets, always break them down per person.',
+          messages: newMsgs.map(m => ({ role: m.role, content: m.text }))
+        })
+      });
+      if (!res.ok) throw new Error('API error: ' + res.status);
+      const data = await res.json();
+      setMessages([...newMsgs, { role: 'assistant', text: data.content[0].text }]);
+    } catch (e) {
+      setMessages([...newMsgs, { role: 'assistant', text: '⚠️ Sorry, I couldn\'t reach my AI brain. Please check your API key and try again. Error: ' + e.message }]);
+    }
+    setLoading(false);
+  }, [apiKey, messages, loading]);
+
+  const quickPrompts = ['Best time to visit Goa 🌴', 'Budget trip for 2 in Manali ❄️', 'What to pack for Kerala monsoon 🌧️', 'Cheapest flights from Bangalore 🛫', 'Street food must-tries in Varanasi 🍛'];
+
+  return (
+    <>
+      <div className={'chat-panel' + (open ? ' open' : '')}>
+        <div className="chat-header">
+          <div className="chat-header-left">
+            <span className="online-dot"></span>
+            <h3>YatraBot</h3>
+          </div>
+          <input className="api-key-input" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="Anthropic API key" type="password" />
+        </div>
+        <div className="quick-chips">
+          {quickPrompts.map((p, i) => (
+            <button key={i} className="quick-chip" onClick={() => sendMessage(p)}>{p}</button>
+          ))}
+        </div>
+        <div className="chat-messages" ref={typingRef}>
+          {messages.map((m, i) => (
+            <div key={i} className={'chat-msg ' + m.role}>{m.text}</div>
+          ))}
+          {loading && (
+            <div className="typing-indicator">
+              <span></span><span></span><span></span>
+            </div>
+          )}
+          <div ref={endRef}></div>
+        </div>
+        <div className="chat-input-area">
+          <input value={input} onChange={e => setInput(e.target.value)}
+            placeholder="Ask YatraBot..." onKeyDown={e => e.key === 'Enter' && sendMessage(input)} />
+          <button onClick={() => sendMessage(input)} disabled={loading}>➤</button>
+        </div>
+      </div>
+      <button className="chat-toggle-mobile" onClick={onToggle} style={{display: open ? 'none' : 'flex'}}>💬</button>
+    </>
+  );
+}
+
+/* ─── APP ─── */
+function App() {
+  const [chatOpen, setChatOpen] = useState(window.innerWidth > 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 768) setChatOpen(true);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    document.body.classList.toggle('chat-open', chatOpen && window.innerWidth > 768);
+  }, [chatOpen]);
+
+  useEffect(() => {
+    if (window.lucide) window.lucide.createIcons();
+  });
+
+  const handlePlanTrip = form => {
+    document.getElementById('itinerary')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  return (
+    <>
+      <div className="orbs"><div className="orb"></div><div className="orb"></div><div className="orb"></div></div>
+      <Navbar />
+      <div className="app-wrapper">
+        <div className="main-content">
+          <HeroSection onPlanTrip={handlePlanTrip} />
+          <ItinerarySection />
+          <BudgetSection />
+          <HotelSection />
+          <FlightSection />
+          <ChecklistSection />
+          <TipsSection />
+        </div>
+        <ChatPanel open={chatOpen} onToggle={() => setChatOpen(!chatOpen)} />
+      </div>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+</script>
+</body>
+</html>
