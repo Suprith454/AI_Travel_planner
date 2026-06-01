@@ -469,6 +469,50 @@ function findDest(name) {
   return null;
 }
 
+function generateGenericTrip(destName,source,travelers,tripType,budget,startDate) {
+  const days=4; const itinerary=[];
+  const w=['☀️','⛅','🌤️','🌙']; const t=[32,28,30,29];
+  const times=['Morning','Afternoon','Evening'];
+  const acts=['Explore & Sightseeing','Local Lunch & Walk','Sunset & Dinner'];
+  const descs=[
+    [`Arrive in ${destName} and check into your accommodation. Start exploring the local area.`,`Visit famous landmarks and immerse yourself in the unique culture of ${destName}.`,`Enjoy local cuisine at a popular restaurant. Take a leisurely walk through the markets.`],
+    [`Discover hidden gems in ${destName}. Visit local attractions and take photos.`,`Have lunch at a recommended local spot. Visit museums or cultural centers.`,`Watch the sunset at a scenic viewpoint. Enjoy dinner with local flavors.`],
+    [`Start early to explore the best of ${destName}. Visit local markets.`,`Experience the local food scene. Take a guided tour of major attractions.`,`Enjoy evening entertainment. Try street food at popular night markets.`],
+    [`Spend your last day exploring places you missed. Buy souvenirs.`,`Have a farewell lunch at your favorite spot from the trip.`,`Depart from ${destName} with wonderful memories. Head to the airport.`]
+  ];
+  for(let d=0;d<days;d++){const acts=[];for(let s=0;s<3;s++){acts.push({time:times[s],name:`${times[s]} in ${destName}`,desc:descs[d][s],duration:['2 hrs','3 hrs','4 hrs','Flexible'][(d+s)%4],cost:[0,800,1500,2500][(d+s)%4],location:destName})}
+  itinerary.push({day:d+1,date:new Date(new Date(startDate).getTime()+d*86400000).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}),weather:{condition:['Sunny','Cloudy','Warm','Clear'][d%4],temp:t[d%4],icon:w[d%4]},activities:acts})}
+
+  const hotelNight=Math.round(budget*0.35/(days-1||1));
+  const hotels=[
+    {name:`Grand ${destName} Palace`,stars:5,location:destName,pricePerNight:Math.round(hotelNight*0.8),amenities:['Pool','Spa','Restaurant','Bar','Room Service']},
+    {name:`${destName} Heritage Hotel`,stars:4,location:destName,pricePerNight:Math.round(hotelNight*0.5),amenities:['Restaurant','Room Service','WiFi','Gym']},
+    {name:`Hotel ${destName} Central`,stars:3,location:destName,pricePerNight:Math.round(hotelNight*0.3),amenities:['Restaurant','WiFi','Room Service']},
+    {name:`${destName} Budget Inn`,stars:2,location:destName,pricePerNight:Math.round(hotelNight*0.15),amenities:['WiFi','Common Room']},
+    {name:`Cozy Stay ${destName}`,stars:3,location:destName,pricePerNight:Math.round(hotelNight*0.25),amenities:['WiFi','Kitchen','Breakfast']},
+    {name:`Luxury ${destName} Resort`,stars:5,location:destName,pricePerNight:Math.round(hotelNight*1.2),amenities:['Pool','Spa','Beach Access','Fine Dining','Bar']}
+  ];
+
+  const srcAir={Delhi:'DEL',Mumbai:'BOM',Bangalore:'BLR',Chennai:'MAA',Kolkata:'CCU',Hyderabad:'HYD',Pune:'PNQ',Ahmedabad:'AMD',Jaipur:'JAI',Chandigarh:'CHD',Lucknow:'LKO',Kochi:'COK',Goa:'GOI'}[source]||'BLR';
+  const destAir=destName.substring(0,3).toUpperCase();
+  const baseFare=Math.round(budget*0.15/travelers);
+  const airlines=['IndiGo','SpiceJet','Vistara','Air India','Akasa Air'];
+  const flights=airlines.map((al,i)=>({airline:al,code:al.substring(0,2).toUpperCase()+(100+Math.floor(Math.random()*800)),from:srcAir,to:destAir,departure:['06:30','09:45','14:20','07:00','16:30'][i],arrival:['08:15','11:30','16:10','08:45','18:15'][i],duration:['1h 45m','2h 15m','2h 50m','1h 45m','2h 45m'][i],stops:i%3===0?'Direct':i===1?'Direct':'1 Stop',price:baseFare+Math.floor(Math.random()*2000)*(i+1)}));
+
+  return {
+    destination:destName,source,travelers,tripType,budget,duration:days,itinerary,hotels,flights,
+    tips:{
+      bestTime:`October to March is generally the best time to visit ${destName}. Check local weather before planning.`,
+      customs:'Greet with "Namaste". Dress modestly at religious sites. Ask permission before photographing locals. Remove footwear before entering homes and temples. Tipping 10% at restaurants is appreciated.',
+      safety:'Stay in well-lit areas at night. Use registered taxis or app-based cabs. Keep copies of important documents. Stay aware of your surroundings. Drink bottled water.',
+      emergency:{police:'100',ambulance:'108',tourism:'1800-11-1363',fire:'101'},
+      currency:'ATMs are widely available in cities. Cash is preferred at smaller shops and local markets. Major credit cards accepted at hotels and larger establishments.',
+      phrases:[['Namaste','Hello/Greeting'],['Dhanyavad','Thank you'],['Kitne ka hai?','How much?'],['Kahan hai?','Where is?'],['Madad karein','Please help']],
+      foods:[`Local ${destName} cuisine`, 'Street food specials', 'Traditional thali', 'Regional sweets']
+    }
+  };
+}
+
 const WEATHERS = [
   {condition:'Sunny',temp:32,icon:'☀️'},
   {condition:'Cloudy',temp:28,icon:'⛅'},
@@ -745,12 +789,11 @@ function App() {
   useEffect(()=>{try{if(window.lucide)window.lucide.createIcons()}catch(e){}});
 
   const handlePlanTrip=form=>{
-    const dest=findDest(form.destination);
-    if(!dest){alert('Destination not found in our database. Please try one of the popular destinations listed.');return}
     const start=form.startDate||new Date().toISOString().split('T')[0];
     const travelers=(form.adults||1)+(form.children||0);
-    setData(generateTrip(dest,form.source,travelers,form.tripType,form.budget||80000,start));
-    setLastDest(dest.name);
+    const dest=findDest(form.destination);
+    if(dest){setData(generateTrip(dest,form.source,travelers,form.tripType,form.budget||80000,start));setLastDest(dest.name)}
+    else{setData(generateGenericTrip(form.destination,form.source,travelers,form.tripType,form.budget||80000,start));setLastDest(form.destination)}
     setTimeout(()=>document.getElementById('itinerary')?.scrollIntoView({behavior:'smooth'}),100);
   };
 
