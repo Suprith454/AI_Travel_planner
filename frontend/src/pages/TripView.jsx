@@ -311,10 +311,10 @@ function TripView() {
           <button className="btn btn-outline btn-sm" onClick={() => setEmailShareModal(true)}>
             {"\u2709\uFE0F"} Email
           </button>
-          <button className="btn btn-outline btn-sm" onClick={loadHotels}>
+          <button className="btn btn-outline btn-sm future-hover" data-tip="Future Enhancement" onClick={loadHotels}>
             {hotelsLoading ? <span className="spinner spinner-sm" /> : "\u{1F3E8}"} Hotels
           </button>
-          <button className="btn btn-outline btn-sm" onClick={loadHiddenGems}>
+          <button className="btn btn-outline btn-sm future-hover" data-tip="Future Enhancement" onClick={loadHiddenGems}>
             {gemsLoading ? <span className="spinner spinner-sm" /> : "\u{1F48E}"} Hidden Gems
           </button>
         </div>
