@@ -32,6 +32,9 @@ function TripView() {
   const [gemsLoading, setGemsLoading] = useState(false);
   const [showGems, setShowGems] = useState(false);
   const [dayWeather, setDayWeather] = useState({});
+  const [emergencyData, setEmergencyData] = useState(null);
+  const [emergencyLoading, setEmergencyLoading] = useState(false);
+  const [showSafety, setShowSafety] = useState(false);
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
   const userMarkerRef = useRef(null);
@@ -150,11 +153,25 @@ function TripView() {
     try {
       const data = await trips.get(id);
       setTrip(data);
+      loadEmergency(data.destination);
     } catch (err) {
       addToast("Failed to load trip", "error");
       navigate("/");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadEmergency = async (destination) => {
+    setEmergencyLoading(true);
+    try {
+      const country = destination.split(",").pop().trim().toLowerCase();
+      const data = await tools.emergency(country);
+      setEmergencyData(data);
+    } catch {
+      // silently fail
+    } finally {
+      setEmergencyLoading(false);
     }
   };
 
@@ -321,6 +338,61 @@ function TripView() {
       </div>
 
       <BudgetSummary trip={trip} />
+
+      <div className="card safety-card">
+        <div className="safety-card-header" onClick={() => setShowSafety(!showSafety)} style={{ cursor: "pointer" }}>
+          <h3 style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span className="safety-shield">&#128737;</span> Safety & Travel Info
+          </h3>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {emergencyLoading && <span className="spinner spinner-sm" />}
+            <span className={`safety-chevron ${showSafety ? "open" : ""}`}>&#9660;</span>
+          </div>
+        </div>
+        {showSafety && emergencyData && (
+          <div className="safety-content">
+            <div className="safety-numbers">
+              <h4 className="safety-section-title">Emergency Numbers</h4>
+              <div className="safety-numbers-grid">
+                {Object.entries(emergencyData.emergency_numbers).map(([key, val]) => (
+                  <div key={key} className="safety-number-item">
+                    <span className="safety-service">{key.replace(/_/g, " ")}</span>
+                    <span className="safety-number">{val}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {emergencyData.embassy_info?.note && (
+              <div className="safety-embassy">
+                <span className="safety-embassy-icon">&#127758;</span>
+                <span>{emergencyData.embassy_info.note}</span>
+              </div>
+            )}
+            <div className="safety-tips">
+              <h4 className="safety-section-title">Safety Tips</h4>
+              <div className="safety-tips-list">
+                {emergencyData.safety_tips.map((tip, i) => (
+                  <div key={i} className="safety-tip-item">
+                    <span className="safety-tip-bullet">&#8226;</span>
+                    <span>{tip}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="safety-tips">
+              <h4 className="safety-section-title">Scam Awareness</h4>
+              <div className="safety-tips-list">
+                {emergencyData.scam_awareness.map((tip, i) => (
+                  <div key={i} className="safety-tip-item">
+                    <span className="safety-tip-bullet">&#9888;</span>
+                    <span>{tip}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
       {shareModal && (
         <div className="photo-modal-overlay" onClick={() => setShareModal(false)}>

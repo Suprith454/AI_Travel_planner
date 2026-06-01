@@ -82,7 +82,7 @@ function Dashboard() {
         >
           <div className="empty-state-icon">&#9992;</div>
           <h3>No trips yet</h3>
-          <p>Plan your first adventure to get started.</p>
+          <p>Plan your first adventure and it will appear here.</p>
           <div className="flex" style={{ gap: 10, justifyContent: "center" }}>
             <button className="btn btn-primary" onClick={() => navigate("/plan")}>Plan a Trip</button>
             <button className="btn btn-outline" onClick={() => navigate("/plan")}>AI Chat</button>
