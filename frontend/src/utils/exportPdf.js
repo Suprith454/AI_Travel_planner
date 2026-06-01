@@ -1,8 +1,8 @@
 import jsPDF from "jspdf";
 
 function categoryIcon(cat) {
-  const map = { food: "🍽", sightseeing: "📍", adventure: "🧗", culture: "🏛", shopping: "🛍", relaxation: "🧘", nightlife: "🌙" };
-  return map[cat] || "•";
+  const map = { food: "[Food]", sightseeing: "[Sight]", adventure: "[Adventure]", culture: "[Culture]", shopping: "[Shop]", relaxation: "[Relax]", nightlife: "[Night]" };
+  return map[cat] || "[Other]";
 }
 
 function renderDay(doc, day, startY, pageWidth, margin) {
@@ -70,9 +70,9 @@ export async function exportTripPdf(trip) {
   doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(80);
-  const meta = [`📍 ${trip.destination}`];
-  if (trip.budget) meta.push(`💰 ${trip.budget}`);
-  meta.push(`📅 ${days.length} day${days.length !== 1 ? "s" : ""}`);
+  const meta = [`Destination: ${trip.destination}`];
+  if (trip.budget) meta.push(`Budget: ${trip.budget}`);
+  meta.push(`${days.length} day${days.length !== 1 ? "s" : ""}`);
   doc.text(meta.join("  ·  "), margin, y);
   y += 8;
 
