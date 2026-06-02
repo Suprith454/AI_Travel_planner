@@ -225,23 +225,14 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;hei
 </style>
 </head>
 <body><div id="root"></div>
-<div id="diag" style="position:fixed;top:0;left:0;right:0;z-index:99999;background:#0A0F2C;color:#F0A500;padding:10px 16px;font-family:monospace;font-size:13px;border-bottom:2px solid #F0A500;text-align:center">⚙️ Diagnostic: <span id="dstep">0</span> — <span id="dmsg">waiting</span></div>
-<script>document.getElementById('dstep').textContent='1';document.getElementById('dmsg').textContent='Loading React...'</script>
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script>document.getElementById('dstep').textContent='3';document.getElementById('dmsg').textContent='Loading Babel...'</script>
 <script src="https://unpkg.com/@babel/standalone@7.26.0/babel.min.js"></script>
-<script>document.getElementById('dstep').textContent='4';document.getElementById('dmsg').textContent='Loading PropTypes...'</script>
 <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
-<script>document.getElementById('dstep').textContent='4b';document.getElementById('dmsg').textContent='Loading Recharts...'</script>
 <script src="https://unpkg.com/recharts@2.15.4/umd/Recharts.js"></script>
-<script>document.getElementById('dstep').textContent='5';document.getElementById('dmsg').textContent='Loading Lucide...'</script>
 <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.js"></script>
-<script>document.getElementById('dstep').textContent='6';document.getElementById('dmsg').textContent='Babel should start now...'</script>
 
 <script>
-var __d=function(s){var e=document.getElementById('dstep');var m=document.getElementById('dmsg');if(e)e.textContent=s;if(m)m.textContent=arguments.length>1?arguments[1]:'running';if(s==='ERR'){var r=document.getElementById('root');if(r)r.innerHTML='<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#0A0F2C;color:#FDF6EC;font-family:sans-serif;flex-direction:column;gap:16px"><h1 style="font-family:Playfair Display,serif;color:#F0A500">YatraAI</h1><p style="color:#FF6B6B">'+arguments[1]+'</p></div>'}};
-__d('7','Plain JS block running');
 const {useState,useEffect,useRef,useCallback,useMemo} = React;
 const R = window.Recharts||{};
 const {PieChart,Pie,Cell,ResponsiveContainer,Tooltip,Legend} = R;
@@ -470,7 +461,6 @@ const PROFILES = {
 };
 
 /* ─── GENERATORS ─── */
-__d('7b','Data loaded, starting generators');
 function findDest(name) {
   const n = name.toLowerCase().trim();
   const keys = Object.keys(PROFILES);
@@ -592,7 +582,6 @@ function generateTrip(dest,source,travelers,tripType,budget,startDate) {
 
   return {destination:dest.name,source,travelers,tripType,budget,duration:days,itinerary,hotels,flights,tips};
 }
-__d('8','All generators done, starting JSX block');
 </script>
 
 <script type="text/babel">
@@ -808,7 +797,6 @@ function ChatPanel({open,onToggle,dest}) {
 }
 
 /* ─── APP ─── */
-__d('9','All components defined, defining App');
 function App() {
   const [chatOpen,setChatOpen]=useState(window.innerWidth>768);
   const [data,setData]=useState(()=>generateTrip(findDest('Goa'),'Bangalore',2,'Beach',80000,new Date().toISOString().split('T')[0]));
@@ -845,8 +833,7 @@ function App() {
   </>;
 }
 
-__d('10','Calling createRoot');
-try{ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));__d('11','React rendered successfully!')}catch(e){document.getElementById('root').innerHTML='<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#0A0F2C;color:#FDF6EC;font-family:sans-serif;flex-direction:column;gap:16px"><h1 style="font-family:Playfair Display,serif;color:#F0A500">YatraAI</h1><p>Loading app...</p><p style="font-size:12px;color:#FF6B6B">'+e.message+'</p></div>';document.getElementById('dstep').textContent='ERR';document.getElementById('dmsg').textContent=e.message}
+try{ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App))}catch(e){document.getElementById('root').innerHTML='<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#0A0F2C;color:#FDF6EC;font-family:sans-serif;flex-direction:column;gap:16px"><h1 style="font-family:Playfair Display,serif;color:#F0A500">YatraAI</h1><p>Loading app...</p><p style="font-size:12px;color:#FF6B6B">'+e.message+'</p></div>'}
 </script>
 </body>
 </html>
