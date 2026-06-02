@@ -770,7 +770,7 @@ function TipsSection({data}) {
 
 /* ─── CHAT ─── */
 function ChatPanel({open,onToggle,dest}) {
-  const [provider,setProvider]=useState(()=>localStorage.getItem('chat_provider')||'anthropic');
+  const [provider,setProvider]=useState(()=>localStorage.getItem('chat_provider')||'groq');
   const [apiKey,setApiKey]=useState(()=>localStorage.getItem('chat_key')||'');
   const [messages,setMessages]=useState([{role:'assistant',text:"👋 Namaste! I'm YatraBot, your Indian travel concierge. Ask me about any destination!"}]);
   const [input,setInput]=useState('');const [loading,setLoading]=useState(false);
@@ -799,7 +799,7 @@ function ChatPanel({open,onToggle,dest}) {
     <option value="anthropic" style={{background:'#0A0F2C'}}>Anthropic</option>
     <option value="groq" style={{background:'#0A0F2C'}}>Groq (Free)</option>
   </select>
-  <input className="api-key-input" value={apiKey} onChange={e=>setApiKey(e.target.value)} placeholder={provider==='groq'?'Groq API key (get at console.groq.com)':'Anthropic API key'} type="password" /></div>
+  <input className="api-key-input" value={apiKey} onChange={e=>{setApiKey(e.target.value);localStorage.setItem('chat_key',e.target.value)}} placeholder={provider==='groq'?'Groq API key (get at console.groq.com)':'Anthropic API key'} type="password" /></div>
   <div className="quick-chips">{qPrompts.map((p,i)=><button key={i} className="quick-chip" onClick={()=>sendMessage(p)}>{p}</button>)}</div>
   <div className="chat-messages">{messages.map((m,i)=><div key={i} className={'chat-msg '+m.role}>{m.text}</div>)}
   {loading&&<div className="typing-indicator"><span></span><span></span><span></span></div>}<div ref={endRef}></div></div>
