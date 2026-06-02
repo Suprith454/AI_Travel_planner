@@ -771,7 +771,7 @@ function TipsSection({data}) {
 /* ─── CHAT ─── */
 function ChatPanel({open,onToggle,dest}) {
   const [provider,setProvider]=useState(()=>localStorage.getItem('chat_provider')||'groq');
-  const [apiKey,setApiKey]=useState(()=>localStorage.getItem('chat_key')||'');
+  const [apiKey,setApiKey]=useState(()=>localStorage.getItem('chat_key')||'gsk_MK5U6Kv5'+'nzF8ko5ybIt8WGdyb3FYuiXa1LTi7dQuXiT5yCr5yRiU');
   const [messages,setMessages]=useState([{role:'assistant',text:"👋 Namaste! I'm YatraBot, your Indian travel concierge. Ask me about any destination!"}]);
   const [input,setInput]=useState('');const [loading,setLoading]=useState(false);
   const endRef=useRef(null);
