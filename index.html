@@ -799,11 +799,11 @@ function ChatPanel({open,onToggle,dest}) {
     <option value="anthropic" style={{background:'#0A0F2C'}}>Anthropic</option>
     <option value="groq" style={{background:'#0A0F2C'}}>Groq (Free)</option>
   </select>
-  <input className="api-key-input" value={apiKey} onChange={e=>setApiKey(e.target.value)} placeholder={provider==='groq'?'Groq API key (get at console.groq.com)':'Anthropic API key'} type="password" />
+  <input className="api-key-input" value={apiKey} onChange={e=>setApiKey(e.target.value)} placeholder={provider==='groq'?'Groq API key (get at console.groq.com)':'Anthropic API key'} type="password" /></div>
   <div className="quick-chips">{qPrompts.map((p,i)=><button key={i} className="quick-chip" onClick={()=>sendMessage(p)}>{p}</button>)}</div>
   <div className="chat-messages">{messages.map((m,i)=><div key={i} className={'chat-msg '+m.role}>{m.text}</div>)}
   {loading&&<div className="typing-indicator"><span></span><span></span><span></span></div>}<div ref={endRef}></div></div>
-  <div className="chat-input-area"><input value={input} onChange={e=>setInput(e.target.value)} placeholder="Ask YatraBot..." onKeyDown={e=>e.key==='Enter'&&sendMessage(input)} /><button onClick={()=>sendMessage(input)} disabled={loading}>➤</button></div></div></div>
+  <div className="chat-input-area"><input value={input} onChange={e=>setInput(e.target.value)} placeholder="Ask YatraBot..." onKeyDown={e=>e.key==='Enter'&&sendMessage(input)} /><button onClick={()=>sendMessage(input)} disabled={loading}>➤</button></div></div>
   <button className="chat-toggle-mobile" onClick={onToggle} style={{display:open?'none':'flex'}}>💬</button></>;
 }
 
