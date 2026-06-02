@@ -775,23 +775,33 @@ function ChatPanel({open,onToggle,dest}) {
   const [messages,setMessages]=useState([{role:'assistant',text:"👋 Namaste! I'm YatraBot, your Indian travel concierge. Ask me about any destination!"}]);
   const [input,setInput]=useState('');const [loading,setLoading]=useState(false);
   const endRef=useRef(null);
-  const endpoints={anthropic:'https://api.anthropic.com/v1/messages',cursor:'https://api.cursor.com/v1/messages'};
+  const endpoints={anthropic:'https://api.anthropic.com/v1/messages',gemini:'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'};
   useEffect(()=>{endRef.current?.scrollIntoView({behavior:'smooth'})},[messages,loading]);
   const sendMessage=useCallback(async(text)=>{if(!text.trim()||loading)return;if(!apiKey){alert('Enter your API key in the chat header first.');return}
     localStorage.setItem('chat_key',apiKey);localStorage.setItem('chat_provider',provider);
     const userMsg={role:'user',text:text.trim()};const newMsgs=[...messages,userMsg];setMessages(newMsgs);setInput('');setLoading(true);
-    try{const res=await fetch(endpoints[provider]||endpoints.anthropic,{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:'You are YatraBot, a friendly expert Indian travel concierge. You specialize in travel within India. Always provide costs in INR (₹) using Indian number formatting. Give specific, actionable advice. Be warm, enthusiastic, and concise. Use relevant emojis. When suggesting budgets, always break them down per person.',messages:newMsgs.map(m=>({role:m.role,content:m.text}))})});
-      if(!res.ok)throw new Error('API error: '+res.status);const data=await res.json();setMessages([...newMsgs,{role:'assistant',text:data.content[0].text}])
-    }catch(e){setMessages([...newMsgs,{role:'assistant',text:'⚠️ Sorry, I couldn\'t reach my AI brain. Check your API key and try again. Error: '+e.message}])}
+    const systemPrompt='You are YatraBot, a friendly expert Indian travel concierge. You specialize in travel within India. Always provide costs in INR (\u20B9) using Indian number formatting. Give specific, actionable advice. Be warm, enthusiastic, and concise. Use relevant emojis. When suggesting budgets, always break them down per person.';
+    try{let res,data;
+      if(provider==='gemini'){
+        const geminiMsgs=newMsgs.map(m=>({role:m.role==='assistant'?'model':'user',parts:[{text:m.text}]}));
+        res=await fetch(endpoints.gemini+'?key='+encodeURIComponent(apiKey),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system_instruction:{parts:[{text:systemPrompt}]},contents:geminiMsgs,generationConfig:{maxOutputTokens:1000}})});
+        if(!res.ok)throw new Error('API error: '+res.status);data=await res.json();
+        const reply=data.candidates?.[0]?.content?.parts?.[0]?.text||'⚠️ No response from Gemini.';
+        setMessages([...newMsgs,{role:'assistant',text:reply}])
+      }else{
+        res=await fetch(endpoints.anthropic,{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:systemPrompt,messages:newMsgs.map(m=>({role:m.role,content:m.text}))})});
+        if(!res.ok)throw new Error('API error: '+res.status);data=await res.json();setMessages([...newMsgs,{role:'assistant',text:data.content[0].text}])
+      }
+    }catch(e){setMessages([...newMsgs,{role:'assistant',text:'\u26A0\uFE0F Sorry, I couldn\'t reach my AI brain. Check your API key and try again. Error: '+e.message}])}
     setLoading(false)
   },[apiKey,messages,loading,provider]);
   const qPrompts=['Best time to visit '+dest+' 🌴','Budget trip for 2 to '+dest+' ❄️','What to pack for '+dest+' 🌧️','Best local food in '+dest+' 🍛','Hidden gems in '+dest+' ✨'];
   return <><div className={'chat-panel'+(open?' open':'')}><div className="chat-header"><div className="chat-header-left"><span className="online-dot"></span><h3>YatraBot</h3></div>
   <select value={provider} onChange={e=>{setProvider(e.target.value);localStorage.setItem('chat_provider',e.target.value)}} style={{background:'rgba(0,0,0,0.3)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'8px',padding:'6px 8px',color:'#FDF6EC',fontSize:'11px',cursor:'pointer'}}>
     <option value="anthropic" style={{background:'#0A0F2C'}}>Anthropic</option>
-    <option value="cursor" style={{background:'#0A0F2C'}}>Cursor</option>
+    <option value="gemini" style={{background:'#0A0F2C'}}>Gemini (Free)</option>
   </select>
-  <input className="api-key-input" value={apiKey} onChange={e=>setApiKey(e.target.value)} placeholder={provider==='cursor'?'Cursor API key':'Anthropic API key'} type="password" />
+  <input className="api-key-input" value={apiKey} onChange={e=>setApiKey(e.target.value)} placeholder={provider==='gemini'?'Gemini API key (get from aistudio.google.com)':'Anthropic API key'} type="password" />
   <div className="quick-chips">{qPrompts.map((p,i)=><button key={i} className="quick-chip" onClick={()=>sendMessage(p)}>{p}</button>)}</div>
   <div className="chat-messages">{messages.map((m,i)=><div key={i} className={'chat-msg '+m.role}>{m.text}</div>)}
   {loading&&<div className="typing-indicator"><span></span><span></span><span></span></div>}<div ref={endRef}></div></div>
