@@ -469,8 +469,8 @@ function findDest(name) {
   return null;
 }
 
-function generateGenericTrip(destName,source,travelers,tripType,budget,startDate) {
-  const days=4; const itinerary=[];
+function generateGenericTrip(destName,source,travelers,tripType,budget,startDate,days=4) {
+  const itinerary=[];
   const w=['☀️','⛅','🌤️','🌙']; const t=[32,28,30,29];
   const times=['Morning','Afternoon','Evening'];
   const acts=['Explore & Sightseeing','Local Lunch & Walk','Sunset & Dinner'];
@@ -524,9 +524,8 @@ const MORNING = ['Morning',['Morning Visit','Guided Tour','Breakfast & Explorati
 const AFTERNOON = ['Afternoon',['Lunch & Sightseeing','Local Experience','Outdoor Activities','Market Visit']];
 const EVENING = ['Evening',['Sunset & Dinner','Cultural Show','Night Market Walk','Relaxation']];
 
-function generateTrip(dest,source,travelers,tripType,budget,startDate) {
+function generateTrip(dest,source,travelers,tripType,budget,startDate,days=4) {
   if (!dest) dest = PROFILES.goa;
-  const days = 4;
   const itinerary = [];
   for (let d = 1; d <= days; d++) {
     const w = WEATHERS[(d-1)%WEATHERS.length];
@@ -810,9 +809,10 @@ function App() {
   const handlePlanTrip=form=>{
     const start=form.startDate||new Date().toISOString().split('T')[0];
     const travelers=(form.adults||1)+(form.children||0);
+    const days=Math.max(1,Math.round((new Date(form.endDate)-new Date(start))/86400000)+1);
     const dest=findDest(form.destination);
-    if(dest){setData(generateTrip(dest,form.source,travelers,form.tripType,form.budget||80000,start));setLastDest(dest.name)}
-    else{setData(generateGenericTrip(form.destination,form.source,travelers,form.tripType,form.budget||80000,start));setLastDest(form.destination)}
+    if(dest){setData(generateTrip(dest,form.source,travelers,form.tripType,form.budget||80000,start,days));setLastDest(dest.name)}
+    else{setData(generateGenericTrip(form.destination,form.source,travelers,form.tripType,form.budget||80000,start,days));setLastDest(form.destination)}
     setTimeout(()=>document.getElementById('itinerary')?.scrollIntoView({behavior:'smooth'}),100);
   };
 
