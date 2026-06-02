@@ -195,8 +195,8 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;hei
 .chat-input-area button:disabled{opacity:0.4;cursor:not-allowed}
 .chat-toggle-mobile{display:none;position:fixed;bottom:24px;right:24px;z-index:60;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#F0A500,#e09400);border:none;color:#0A0F2C;font-size:24px;cursor:pointer;box-shadow:0 4px 20px rgba(240,165,0,0.3);transition:all 0.3s;align-items:center;justify-content:center}
 .chat-toggle-mobile:hover{transform:scale(1.1)}
-.map-placeholder{height:200px;border-radius:12px;background:rgba(255,255,255,0.02);margin-top:20px;display:flex;align-items:center;justify-content:center;font-size:14px;color:rgba(253,246,236,0.3);border:1px solid rgba(255,255,255,0.04);overflow:hidden}
-.map-placeholder iframe{width:100%;height:100%;border:none}
+.map-placeholder{height:200px;border-radius:12px;background:rgba(255,255,255,0.02);margin-top:20px;display:flex;align-items:center;justify-content:center;font-size:14px;color:rgba(253,246,236,0.3);border:1px solid rgba(255,255,255,0.04);overflow:hidden;transition:all 0.3s}
+.map-placeholder:hover{border-color:#F0A500;background:rgba(240,165,0,0.04)}
 .not-found{padding:60px 20px;text-align:center;color:rgba(253,246,236,0.5)}
 .not-found h3{color:#F0A500;margin-bottom:8px}
 
@@ -500,7 +500,7 @@ function generateGenericTrip(destName,source,travelers,tripType,budget,startDate
   const flights=airlines.map((al,i)=>({airline:al,code:al.substring(0,2).toUpperCase()+(100+Math.floor(Math.random()*800)),from:srcAir,to:destAir,departure:['06:30','09:45','14:20','07:00','16:30'][i],arrival:['08:15','11:30','16:10','08:45','18:15'][i],duration:['1h 45m','2h 15m','2h 50m','1h 45m','2h 45m'][i],stops:i%3===0?'Direct':i===1?'Direct':'1 Stop',price:baseFare+Math.floor(Math.random()*2000)*(i+1)}));
 
   return {
-    destination:destName,source,travelers,tripType,budget,duration:days,itinerary,hotels,flights,
+    destination:destName,source,travelers,tripType,budget,duration:days,region:'heritage',itinerary,hotels,flights,
     tips:{
       bestTime:`October to March is generally the best time to visit ${destName}. Check local weather before planning.`,
       customs:'Greet with "Namaste". Dress modestly at religious sites. Ask permission before photographing locals. Remove footwear before entering homes and temples. Tipping 10% at restaurants is appreciated.',
@@ -604,7 +604,7 @@ function HeroSection({onPlanTrip,lastDest}) {
     source:'Bangalore',destination:lastDest||'Goa',startDate:new Date().toISOString().split('T')[0],
     endDate:new Date(Date.now()+3*86400000).toISOString().split('T')[0],adults:2,children:0,tripType:'Beach',budget:80000
   });
-  const popularDests=['Goa','Manali','Kerala','Rajasthan','Andaman','Leh-Ladakh','Varanasi','Ooty','Rishikesh','Darjeeling','Shimla','Agra','Udaipur','Jaipur','Pondicherry','Coorg','Hampi'];
+  const popularDests=['Goa','Manali','Kerala','Rajasthan','Andaman','Leh-Ladakh','Varanasi','Ooty','Rishikesh','Darjeeling','Shimla','Agra','Udaipur','Jaipur','Pondicherry','Coorg','Hampi','Mysore'];
   const indianCities=['Delhi','Mumbai','Bangalore','Chennai','Kolkata','Hyderabad','Pune','Ahmedabad','Jaipur','Chandigarh','Lucknow','Kochi'];
   return <section id="plan" className="section visible hero"><div className="hero-content"><h1>YatraAI</h1><p className="hero-sub">Your Personal Indian Travel Concierge — plan, book, and explore with AI</p><div className="trip-form">
     <div className="form-group"><label>From</label><select value={form.source} onChange={e=>setForm({...form,source:e.target.value})}>{indianCities.map(c=><option key={c} value={c}>{c}</option>)}</select></div>
@@ -632,7 +632,7 @@ function ItinerarySection({data}) {
     <div className="itinerary-grid">{days.map((day,di)=><div key={di} className="day-card glass"><div className="day-card-header"><div className="day-badge"><div className="day-number">{day.day}</div><div><h3 style={{fontSize:18}}>Day {day.day}</h3><div className="day-date">{day.date}</div></div></div><div className="weather-badge">{day.weather.icon} {day.weather.temp}°C</div></div>
     <div className="activities">{day.activities.map((a,ai)=><div key={ai} className="activity-card" style={{borderLeftColor:[COLORS.food,COLORS.activities,COLORS.shopping][ai]}}><div className="activity-time">{a.time}</div><div className="activity-details"><h4>{a.name}</h4><p>{a.desc}</p><div className="activity-meta"><span>⏱ {a.duration}</span><span>📍 {a.location}</span>{a.cost>0&&<span>{INR(a.cost)}</span>}</div></div></div>)}</div>
     <button className="add-activity-btn" onClick={()=>{const d=[...days];d[di].activities.push({time:'Evening',name:'Free Time',desc:'Explore on your own or relax',duration:'Flexible',cost:0,location:data.destination});setDays(d)}}>+ Add Activity</button>
-    <div className="map-placeholder"><iframe src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZNTgi8QPjFM84&q=${encodeURIComponent(data.destination)}&zoom=11`} loading="lazy" referrerPolicy="no-referrer-when-downgrade"></iframe></div>
+    <div className="map-placeholder"><a href={`https://www.google.com/maps/search/${encodeURIComponent(data.destination)}/`} target="_blank" rel="noopener noreferrer" style={{color:'#F0A500',textDecoration:'none',fontWeight:600}}>📍 Open {data.destination} on Google Maps →</a></div>
     {data.tips?.foods&&<div style={{marginTop:12,fontSize:13,color:'rgba(253,246,236,0.4)'}}>🍽️ Must-try: {data.tips.foods.join(' • ')}</div>}</div>)}</div>
   </section>;
 }
@@ -698,7 +698,8 @@ function FlightSection({data}) {
   const [visible,setVisible]=useState(false);
   const ref=useRef(null);
   useEffect(()=>{const o=new IntersectionObserver(([e])=>{if(e.isIntersecting)setVisible(true)},{threshold:0.1});if(ref.current)o.observe(ref.current);return ()=>o.disconnect()},[]);
-  const sorted=[...data.flights].sort((a,b)=>{if(sort==='cheapest')return a.price-b.price;if(sort==='fastest'){const d=s=>parseInt(s.duration);return d(a)-d(b)}return a.stops==='Direct'?-1:1});
+  const min=s=>{const m=s.duration.match(/(\d+)h\s*(\d+)?/);return parseInt(m[1])*60+(parseInt(m[2])||0)};
+  const sorted=[...data.flights].sort((a,b)=>{if(sort==='cheapest')return a.price-b.price;if(sort==='fastest')return min(a)-min(b);return a.stops==='Direct'?-1:1});
   return <section id="flights" ref={ref} className={'section'+(visible?' visible':'')}>
     <div className="section-header"><h2>Flights to {data.destination}</h2><p>{data.source} → {data.destination}</p><div className="gold-accent"></div></div>
     <div className="flight-filters">{[{k:'cheapest',l:'💰 Cheapest'},{k:'fastest',l:'⚡ Fastest'},{k:'direct',l:'✈️ Non-stop'}].map(f=><button key={f.k} className={sort===f.k?'active':''} onClick={()=>setSort(f.k)}>{f.l}</button>)}</div>
@@ -744,7 +745,7 @@ function TipsSection({data}) {
   useEffect(()=>{const o=new IntersectionObserver(([e])=>{if(e.isIntersecting)setVisible(true)},{threshold:0.1});if(ref.current)o.observe(ref.current);return ()=>o.disconnect()},[]);
   return <section id="tips" ref={ref} className={'section'+(visible?' visible':'')}>
     <div className="section-header"><h2>Travel Tips & Alerts</h2><p>Everything you need to know about {data.destination}</p><div className="gold-accent"></div>
-    <span className="dest-badge">{data.destination}, {data.tips?.foods?.length ? data.destination : ''}</span></div>
+    <span className="dest-badge">{data.region || 'travel'}</span></div>
     <div className="tips-grid">
       <div className="tip-card glass"><h4>🗓️ Best Time to Visit</h4><p>{data.tips.bestTime}</p></div>
       <div className="tip-card glass"><h4>🎭 Local Customs</h4><p>{data.tips.customs}</p></div>
@@ -804,7 +805,7 @@ function App() {
 
   useEffect(()=>{const h=()=>{if(window.innerWidth>768)setChatOpen(true)};window.addEventListener('resize',h);return ()=>window.removeEventListener('resize',h)},[]);
   useEffect(()=>{document.body.classList.toggle('chat-open',chatOpen&&window.innerWidth>768)},[chatOpen]);
-  useEffect(()=>{try{if(window.lucide)window.lucide.createIcons()}catch(e){}});
+  useEffect(()=>{try{if(window.lucide)window.lucide.createIcons()}catch(e){}},[]);
 
   const handlePlanTrip=form=>{
     const start=form.startDate||new Date().toISOString().split('T')[0];
